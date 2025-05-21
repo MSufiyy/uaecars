@@ -158,7 +158,8 @@ export const saveListing = async (car: CarListing): Promise<boolean> => {
       const request = store.put(car);
       
       request.onsuccess = () => {
-        // Keep localStorage in sync for backward compatibility
+        console.log("Car listing saved successfully:", car.id);
+        // Make sure localStorage is completely in sync - important for persistence
         const listingsJSON = localStorage.getItem("carListings");
         let allListings = listingsJSON ? JSON.parse(listingsJSON) : [];
         
@@ -186,6 +187,7 @@ export const saveListing = async (car: CarListing): Promise<boolean> => {
 
 export const loadListings = async (): Promise<CarListing[]> => {
   try {
+    console.log("Loading all car listings...");
     const db = await initializeDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(CARS_STORE, "readonly");
@@ -195,16 +197,19 @@ export const loadListings = async (): Promise<CarListing[]> => {
       
       request.onsuccess = () => {
         const results = request.result;
-        // Keep localStorage in sync for backward compatibility
+        console.log(`Found ${results.length} car listings in IndexedDB`);
+        
+        // Always keep localStorage in sync
         localStorage.setItem("carListings", JSON.stringify(results));
         resolve(results);
       };
       
       request.onerror = (event) => {
-        console.error("Error getting car listings:", event);
+        console.error("Error getting car listings from IndexedDB:", event);
         // Fall back to localStorage
         const listingsJSON = localStorage.getItem("carListings");
         const listings = listingsJSON ? JSON.parse(listingsJSON) : [];
+        console.log(`Falling back to localStorage: found ${listings.length} listings`);
         resolve(listings);
       };
     });
@@ -309,6 +314,7 @@ export const setCurrentUser = (user: {
 // Initialize data from localStorage on first load
 export const initializeFromLocalStorage = async () => {
   try {
+    console.log("Initializing data from localStorage to IndexedDB");
     // Migrate users
     const usersJSON = localStorage.getItem("users");
     if (usersJSON) {
@@ -322,6 +328,7 @@ export const initializeFromLocalStorage = async () => {
     const listingsJSON = localStorage.getItem("carListings");
     if (listingsJSON) {
       const listings = JSON.parse(listingsJSON);
+      console.log(`Migrating ${listings.length} car listings to IndexedDB`);
       for (const listing of listings) {
         await saveListing(listing);
       }

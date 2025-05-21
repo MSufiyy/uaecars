@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -19,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { CarListing } from "@/components/cars/CarCard";
+import { saveListing, getCurrentUser } from "@/utils/persistentStorage";
 
 // Generate years from 1990 to current year
 const generateYears = () => {
@@ -54,14 +54,18 @@ const Sell = () => {
   
   useEffect(() => {
     // Check if user is logged in
-    const userJSON = localStorage.getItem("currentUser");
-    if (userJSON) {
-      setIsLoggedIn(true);
-      setCurrentUser(JSON.parse(userJSON));
-    } else {
-      toast("Please login to sell your car");
-      navigate("/login");
-    }
+    const checkLoginStatus = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+      } else {
+        toast("Please login to sell your car");
+        navigate("/login");
+      }
+    };
+    
+    checkLoginStatus();
   }, [navigate]);
   
   const form = useForm<FormValues>({
@@ -87,7 +91,7 @@ const Sell = () => {
     }
   };
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (!isLoggedIn || !currentUser) {
       toast.error("You must be logged in to sell a car");
       navigate("/login");
@@ -100,10 +104,6 @@ const Sell = () => {
     }
     
     try {
-      // Get existing listings from localStorage
-      const listingsJSON = localStorage.getItem("carListings");
-      const listings = listingsJSON ? JSON.parse(listingsJSON) : [];
-      
       // Create new listing
       const newListing: CarListing = {
         id: Date.now().toString(),
@@ -119,20 +119,24 @@ const Sell = () => {
         seller: {
           id: currentUser.id,
           name: currentUser.name,
+          phone: currentUser.phone || undefined,
         },
         createdAt: new Date().toISOString()
       };
       
-      // Add to listings array
-      listings.push(newListing);
-      localStorage.setItem("carListings", JSON.stringify(listings));
+      // Save to IndexedDB using the persistentStorage utility
+      const success = await saveListing(newListing);
       
-      toast.success("Your car has been listed for sale successfully!");
-      form.reset();
-      setImagePreview(null);
-      
-      // Redirect to browse page
-      navigate("/browse");
+      if (success) {
+        toast.success("Your car has been listed for sale successfully!");
+        form.reset();
+        setImagePreview(null);
+        
+        // Redirect to browse page
+        navigate("/browse");
+      } else {
+        toast.error("Failed to list your car. Please try again.");
+      }
     } catch (error) {
       console.error("Error saving listing:", error);
       toast.error("Failed to list your car. Please try again.");

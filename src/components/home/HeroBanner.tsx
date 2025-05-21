@@ -22,7 +22,7 @@ const HeroBanner = () => {
                 </Button>
               </Link>
               <Link to="/sell">
-                <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                <Button variant="outline" className="border-white text-black bg-white hover:bg-white/90">
                   Sell Your Car
                 </Button>
               </Link>
