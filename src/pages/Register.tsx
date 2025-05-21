@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const Register = () => {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,19 +33,53 @@ const Register = () => {
     
     setIsLoading(true);
     
-    // Simulate registration process (would connect to backend in a real app)
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Get existing users from localStorage
+      const usersJSON = localStorage.getItem("users");
+      const users = usersJSON ? JSON.parse(usersJSON) : [];
+      
+      // Check if email already exists
+      if (users.some((user: any) => user.email === email)) {
+        toast({
+          variant: "destructive",
+          title: "Email already in use",
+          description: "Please use a different email address.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Create new user
+      const newUser = {
+        id: Date.now().toString(),
+        name,
+        email,
+        password,
+        phone,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add to users array
+      users.push(newUser);
+      localStorage.setItem("users", JSON.stringify(users));
       
       toast({
         title: "Registration successful",
         description: "Your account has been created successfully.",
       });
       
-      // In a real app, this would create the user and redirect
-      // For demo, we'll just redirect
-      window.location.href = "/login";
-    }, 1500);
+      // Redirect to login
+      navigate("/login");
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        variant: "destructive",
+        title: "Registration failed",
+        description: "An error occurred during registration.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

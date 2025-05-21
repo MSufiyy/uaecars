@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,25 +13,36 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process (would connect to backend in a real app)
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Get users from local storage
+      const usersJSON = localStorage.getItem("users");
+      const users = usersJSON ? JSON.parse(usersJSON) : [];
       
-      // Demo login success - in real app this would check credentials against backend
-      if (email.includes("@") && password.length >= 6) {
+      // Find user with matching email
+      const user = users.find((u: any) => u.email === email);
+      
+      if (user && user.password === password) {
+        // Set current user in localStorage
+        localStorage.setItem("currentUser", JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || "",
+          location: user.location || ""
+        }));
+        
         toast({
           title: "Login successful",
           description: "You have been logged in successfully.",
         });
         
-        // In a real app, this would set authentication state and redirect
-        // For demo, we'll just redirect
-        window.location.href = "/";
+        navigate("/");
       } else {
         toast({
           variant: "destructive",
@@ -39,7 +50,16 @@ const Login = () => {
           description: "Please check your credentials and try again.",
         });
       }
-    }, 1500);
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: "An error occurred during login.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -1,15 +1,32 @@
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, X, Car } from "lucide-react";
+import { toast } from "sonner";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const navigate = useNavigate();
   
-  // Simulate a logged-in user for demo purposes
-  // In a real app, this would come from an auth context
-  const isLoggedIn = false;
+  useEffect(() => {
+    // Check if user is logged in
+    const userJSON = localStorage.getItem("currentUser");
+    if (userJSON) {
+      setIsLoggedIn(true);
+      setCurrentUser(JSON.parse(userJSON));
+    }
+  }, []);
+  
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    toast("Successfully logged out");
+    navigate("/");
+  };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -42,12 +59,15 @@ const Navbar = () => {
             </Button>
             
             {isLoggedIn ? (
-              <Link to="/profile">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  <span>Profile</span>
-                </Button>
-              </Link>
+              <>
+                <Link to="/profile">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    <span>{currentUser?.name || "Profile"}</span>
+                  </Button>
+                </Link>
+                <Button onClick={handleLogout}>Logout</Button>
+              </>
             ) : (
               <>
                 <Link to="/login">
@@ -104,12 +124,18 @@ const Navbar = () => {
             </Link>
             <div className="pt-2 border-t border-gray-100">
               {isLoggedIn ? (
-                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="w-full mb-2 flex items-center justify-center gap-2">
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full mb-2 flex items-center justify-center gap-2">
+                      <User className="h-4 w-4" />
+                      {currentUser?.name || "Profile"}
+                    </Button>
+                  </Link>
+                  <Button onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }} className="w-full">Logout</Button>
+                </>
               ) : (
                 <>
                   <Link to="/login" onClick={() => setIsMenuOpen(false)}>

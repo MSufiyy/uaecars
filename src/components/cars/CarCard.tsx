@@ -11,10 +11,14 @@ export interface CarListing {
   mileage: number;
   location: string;
   imageUrl: string;
+  description: string;
+  make: string;
+  model: string;
   seller: {
     id: string;
     name: string;
   };
+  createdAt: string;
 }
 
 interface CarCardProps {
@@ -58,7 +62,7 @@ const CarCard = ({ car }: CarCardProps) => {
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
-          Posted by <Link to={`/user/${car.seller.id}`} className="text-car-primary hover:underline">{car.seller.name}</Link>
+          Posted by <span className="text-car-primary">{car.seller.name}</span>
         </p>
         <Link to={`/car/${car.id}`}>
           <Button size="sm">View Details</Button>
