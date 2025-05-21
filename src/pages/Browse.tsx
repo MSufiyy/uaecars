@@ -17,7 +17,7 @@ const Browse = () => {
   const [filteredCars, setFilteredCars] = useState<CarListing[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState([0, 500000]);
-  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("all");
   
   useEffect(() => {
     // In a real app, this would fetch from an API
@@ -46,7 +46,7 @@ const Browse = () => {
     );
     
     // Filter by location
-    if (selectedLocation) {
+    if (selectedLocation && selectedLocation !== "all") {
       filtered = filtered.filter(car => 
         car.location === selectedLocation
       );
@@ -119,7 +119,7 @@ const Browse = () => {
                       <SelectValue placeholder="Any Location" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any Location</SelectItem>
+                      <SelectItem value="all">Any Location</SelectItem>
                       {locations.map(location => (
                         <SelectItem key={location} value={location}>
                           {location}
@@ -135,7 +135,7 @@ const Browse = () => {
                   onClick={() => {
                     setSearchTerm("");
                     setPriceRange([0, 500000]);
-                    setSelectedLocation("");
+                    setSelectedLocation("all");
                   }}
                   className="w-full"
                 >
@@ -178,7 +178,7 @@ const Browse = () => {
                   onClick={() => {
                     setSearchTerm("");
                     setPriceRange([0, 500000]);
-                    setSelectedLocation("");
+                    setSelectedLocation("all");
                   }}
                 >
                   Clear Filters
