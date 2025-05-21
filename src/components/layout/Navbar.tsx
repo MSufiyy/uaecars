@@ -2,10 +2,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X } from "lucide-react";
+import { Search, User, Menu, X, Car } from "lucide-react";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Simulate a logged-in user for demo purposes
+  // In a real app, this would come from an auth context
+  const isLoggedIn = false;
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -24,13 +28,10 @@ const Navbar = () => {
               Home
             </Link>
             <Link to="/browse" className="text-foreground hover:text-car-primary transition-colors">
-              Browse Cars
+              Buy Cars
             </Link>
             <Link to="/sell" className="text-foreground hover:text-car-primary transition-colors">
               Sell Your Car
-            </Link>
-            <Link to="/about" className="text-foreground hover:text-car-primary transition-colors">
-              About Us
             </Link>
           </nav>
 
@@ -39,15 +40,27 @@ const Navbar = () => {
             <Button variant="outline" size="icon">
               <Search className="h-5 w-5" />
             </Button>
-            <Link to="/login">
-              <Button variant="outline" className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                <span>Login</span>
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button className="bg-car-primary hover:bg-car-secondary">Register</Button>
-            </Link>
+            
+            {isLoggedIn ? (
+              <Link to="/profile">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  <span>Profile</span>
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    <span>Login</span>
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button className="bg-car-primary hover:bg-car-secondary">Register</Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -80,7 +93,7 @@ const Navbar = () => {
               className="block py-2 text-foreground hover:text-car-primary"
               onClick={() => setIsMenuOpen(false)}
             >
-              Browse Cars
+              Buy Cars
             </Link>
             <Link 
               to="/sell" 
@@ -89,20 +102,24 @@ const Navbar = () => {
             >
               Sell Your Car
             </Link>
-            <Link 
-              to="/about" 
-              className="block py-2 text-foreground hover:text-car-primary"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About Us
-            </Link>
             <div className="pt-2 border-t border-gray-100">
-              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="outline" className="w-full mb-2">Login</Button>
-              </Link>
-              <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full bg-car-primary hover:bg-car-secondary">Register</Button>
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="outline" className="w-full mb-2 flex items-center justify-center gap-2">
+                    <User className="h-4 w-4" />
+                    Profile
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full mb-2">Login</Button>
+                  </Link>
+                  <Link to="/register" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full bg-car-primary hover:bg-car-secondary">Register</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
