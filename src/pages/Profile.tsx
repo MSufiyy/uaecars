@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Phone, MapPin } from "lucide-react";
 import { CarListing } from "@/components/cars/CarCard";
+import { getCurrentUser, updateUser, getUserByEmail, getListingsByUser } from "@/utils/persistentStorage";
 
 const Profile = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -23,69 +24,69 @@ const Profile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const userJSON = localStorage.getItem("currentUser");
-    if (!userJSON) {
-      toast({
-        title: "Not logged in",
-        description: "Please log in to view your profile",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
+    const fetchUserData = async () => {
+      // Check if user is logged in
+      const userData = await getCurrentUser();
+      if (!userData) {
+        toast({
+          title: "Not logged in",
+          description: "Please log in to view your profile",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+      
+      // Get full user data including password for update operations
+      const fullUser = await getUserByEmail(userData.email);
+      
+      if (fullUser) {
+        setCurrentUser(fullUser);
+        setName(fullUser.name || "");
+        setEmail(fullUser.email || "");
+        setPhone(fullUser.phone || "");
+        setLocation(fullUser.location || "");
+        
+        // Get user's car listings
+        const userCars = await getListingsByUser(fullUser.id);
+        setUserListings(userCars);
+      } else {
+        toast({
+          title: "User not found",
+          description: "There was a problem loading your profile",
+          variant: "destructive",
+        });
+        navigate("/login");
+      }
+    };
     
-    const user = JSON.parse(userJSON);
-    setCurrentUser(user);
-    setName(user.name || "");
-    setEmail(user.email || "");
-    setPhone(user.phone || "");
-    setLocation(user.location || "");
-    
-    // Get user's car listings
-    const listingsJSON = localStorage.getItem("carListings");
-    if (listingsJSON) {
-      const allListings = JSON.parse(listingsJSON);
-      const userCars = allListings.filter((car: CarListing) => car.seller.id === user.id);
-      setUserListings(userCars);
-    }
+    fetchUserData();
   }, [navigate, toast]);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!currentUser) return;
     
     try {
-      // Update current user in localStorage
+      // Update current user
       const updatedUser = {
         ...currentUser,
         name,
         phone,
         location
       };
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
       
-      // Also update in users array
-      const usersJSON = localStorage.getItem("users");
-      if (usersJSON) {
-        const users = JSON.parse(usersJSON);
-        const userIndex = users.findIndex((u: any) => u.id === currentUser.id);
-        if (userIndex !== -1) {
-          users[userIndex] = {
-            ...users[userIndex],
-            name,
-            phone,
-            location
-          };
-          localStorage.setItem("users", JSON.stringify(users));
-        }
+      const success = await updateUser(updatedUser);
+      
+      if (success) {
+        setCurrentUser(updatedUser);
+        setEditMode(false);
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been updated successfully",
+        });
+      } else {
+        throw new Error("Failed to update profile");
       }
-      
-      setCurrentUser(updatedUser);
-      setEditMode(false);
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
-      });
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({

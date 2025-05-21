@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CarListing } from "@/components/cars/CarCard";
 import { Phone, MapPin, User, Car, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { getListing, getCurrentUser } from "@/utils/persistentStorage";
 
 const CarDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,20 +19,22 @@ const CarDetails = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const userJSON = localStorage.getItem("currentUser");
-    setIsLoggedIn(!!userJSON);
-    
-    // Get car listing
-    const listingsJSON = localStorage.getItem("carListings");
-    if (listingsJSON && id) {
-      const allListings = JSON.parse(listingsJSON);
-      const foundCar = allListings.find((car: CarListing) => car.id === id);
-      if (foundCar) {
-        setCar(foundCar);
+    const fetchData = async () => {
+      // Check if user is logged in
+      const currentUser = await getCurrentUser();
+      setIsLoggedIn(!!currentUser);
+      
+      // Get car listing
+      if (id) {
+        const carData = await getListing(id);
+        if (carData) {
+          setCar(carData);
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    
+    fetchData();
   }, [id]);
 
   const handleContactSeller = () => {
@@ -165,6 +168,12 @@ const CarDetails = () => {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <span>{car.seller.name}</span>
                 </div>
+                {car.seller.phone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.phone}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-muted-foreground" />
                   <span>{car.location}</span>

@@ -17,6 +17,7 @@ export interface CarListing {
   seller: {
     id: string;
     name: string;
+    phone?: string;
   };
   createdAt: string;
 }

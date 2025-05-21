@@ -7,7 +7,7 @@ const Footer = () => {
   return (
     <footer className="bg-car-primary text-white mt-12">
       <div className="car-container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Company Info */}
           <div>
             <h3 className="text-xl font-bold mb-4">UAE<span className="text-car-accent">Cars</span></h3>
@@ -45,29 +45,6 @@ const Footer = () => {
               <li><Link to="/browse" className="text-gray-300 hover:text-white">Browse Cars</Link></li>
               <li><Link to="/sell" className="text-gray-300 hover:text-white">Sell Your Car</Link></li>
               <li><Link to="/about" className="text-gray-300 hover:text-white">About Us</Link></li>
-            </ul>
-          </div>
-
-          {/* Car Categories */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Car Categories</h3>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-gray-300 hover:text-white">Luxury Cars</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white">SUVs</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white">Sedans</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white">Sports Cars</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white">Economy Cars</a></li>
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-            <ul className="space-y-2 text-gray-300">
-              <li>123 Sheikh Zayed Road</li>
-              <li>Dubai, UAE</li>
-              <li>Phone: +971 4 123 4567</li>
-              <li>Email: info@uaecars.com</li>
             </ul>
           </div>
         </div>

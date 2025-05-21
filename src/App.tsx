@@ -13,6 +13,9 @@ import CarDetails from "./pages/CarDetails";
 import Sell from "./pages/Sell";
 import Profile from "./pages/Profile";
 
+// Add custom styles to override the button text color
+import "./buttonStyles.css";
+
 const queryClient = new QueryClient();
 
 const App = () => (

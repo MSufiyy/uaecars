@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { getUserByEmail, setCurrentUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,27 +16,28 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Initialize data from localStorage on first visit
+  useEffect(() => {
+    initializeFromLocalStorage();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      // Get users from local storage
-      const usersJSON = localStorage.getItem("users");
-      const users = usersJSON ? JSON.parse(usersJSON) : [];
-      
       // Find user with matching email
-      const user = users.find((u: any) => u.email === email);
+      const user = await getUserByEmail(email);
       
       if (user && user.password === password) {
-        // Set current user in localStorage
-        localStorage.setItem("currentUser", JSON.stringify({
+        // Set current user
+        setCurrentUser({
           id: user.id,
           name: user.name,
           email: user.email,
           phone: user.phone || "",
           location: user.location || ""
-        }));
+        });
         
         toast({
           title: "Login successful",

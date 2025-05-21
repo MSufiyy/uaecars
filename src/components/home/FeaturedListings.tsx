@@ -4,22 +4,29 @@ import { Button } from "@/components/ui/button";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
 import { Link } from "react-router-dom";
 
+// Create a file module for handling persistent user data
+import { loadListings } from "@/utils/persistentStorage";
+
 const FeaturedListings = () => {
   const [featuredCars, setFeaturedCars] = useState<CarListing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get car listings from localStorage
-    const listingsJSON = localStorage.getItem("carListings");
-    if (listingsJSON) {
-      const allListings = JSON.parse(listingsJSON);
+    // Get car listings from persistent storage
+    const loadCarListings = async () => {
+      const allListings = await loadListings();
+      
       // Sort by newest first and take up to 6
-      const sorted = allListings.sort((a: CarListing, b: CarListing) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ).slice(0, 6);
-      setFeaturedCars(sorted);
-    }
-    setLoading(false);
+      if (allListings && allListings.length > 0) {
+        const sorted = allListings.sort((a: CarListing, b: CarListing) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ).slice(0, 6);
+        setFeaturedCars(sorted);
+      }
+      setLoading(false);
+    };
+    
+    loadCarListings();
   }, []);
 
   return (

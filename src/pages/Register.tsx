@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { getUserByEmail, saveUser, getUsers, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -17,6 +18,11 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Initialize data from localStorage on first visit
+  useEffect(() => {
+    initializeFromLocalStorage();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +40,10 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      // Get existing users from localStorage
-      const usersJSON = localStorage.getItem("users");
-      const users = usersJSON ? JSON.parse(usersJSON) : [];
-      
       // Check if email already exists
-      if (users.some((user: any) => user.email === email)) {
+      const existingUser = await getUserByEmail(email);
+      
+      if (existingUser) {
         toast({
           variant: "destructive",
           title: "Email already in use",
@@ -60,16 +64,19 @@ const Register = () => {
       };
       
       // Add to users array
-      users.push(newUser);
-      localStorage.setItem("users", JSON.stringify(users));
+      const result = await saveUser(newUser);
       
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created successfully.",
-      });
-      
-      // Redirect to login
-      navigate("/login");
+      if (result) {
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created successfully.",
+        });
+        
+        // Redirect to login
+        navigate("/login");
+      } else {
+        throw new Error("Failed to save user");
+      }
     } catch (error) {
       console.error("Registration error:", error);
       toast({
