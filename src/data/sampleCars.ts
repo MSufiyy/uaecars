@@ -13,7 +13,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u1",
       name: "Dubai Luxury Motors"
-    }
+    },
+    description: "Luxury sedan in excellent condition. One owner, full service history, accident-free.",
+    make: "Mercedes-Benz",
+    model: "S-Class S 450",
+    createdAt: "2023-05-15T08:30:00Z"
   },
   {
     id: "2",
@@ -26,7 +30,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u2",
       name: "Premium Auto UAE"
-    }
+    },
+    description: "Pristine condition BMW X5 with all premium features. Panoramic roof, head-up display, and premium sound system.",
+    make: "BMW",
+    model: "X5 xDrive40i",
+    createdAt: "2023-06-20T10:15:00Z"
   },
   {
     id: "3",
@@ -39,7 +47,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u3",
       name: "Elite Cars"
-    }
+    },
+    description: "Well-maintained Audi A6 with full service history. Leather interior, navigation system, and advanced driver assistance features.",
+    make: "Audi",
+    model: "A6 45 TFSI",
+    createdAt: "2023-04-10T14:20:00Z"
   },
   {
     id: "4",
@@ -52,7 +64,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u4",
       name: "Emirates Auto"
-    }
+    },
+    description: "Nearly new Range Rover Sport with extended warranty. Premium package with all options and off-road capability.",
+    make: "Land Rover",
+    model: "Range Rover Sport HSE",
+    createdAt: "2023-08-05T09:45:00Z"
   },
   {
     id: "5",
@@ -65,7 +81,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u5",
       name: "Al Ain Motors"
-    }
+    },
+    description: "Comfortable and reliable Lexus ES with clean history. Well-maintained with regular service at the dealership.",
+    make: "Lexus",
+    model: "ES 350",
+    createdAt: "2023-03-25T11:30:00Z"
   },
   {
     id: "6",
@@ -78,7 +98,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u6",
       name: "RAK Auto Traders"
-    }
+    },
+    description: "Powerful Land Cruiser with full options. Perfect for both city driving and desert adventures.",
+    make: "Toyota",
+    model: "Land Cruiser VXR",
+    createdAt: "2023-07-12T15:40:00Z"
   },
   {
     id: "7",
@@ -91,7 +115,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u7",
       name: "Dubai Auto Souk"
-    }
+    },
+    description: "Popular UAE SUV with strong performance and reliability. Spacious interior with third-row seating.",
+    make: "Nissan",
+    model: "Patrol Titanium",
+    createdAt: "2023-05-30T13:10:00Z"
   },
   {
     id: "8",
@@ -104,7 +132,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u8",
       name: "Capital Motors"
-    }
+    },
+    description: "Elegant and sporty Porsche Cayenne with premium features. Sport package with enhanced performance.",
+    make: "Porsche",
+    model: "Cayenne",
+    createdAt: "2023-06-08T16:25:00Z"
   },
   {
     id: "9",
@@ -117,7 +149,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u9",
       name: "Future Motors"
-    }
+    },
+    description: "All-electric Tesla with impressive range and performance. Autopilot features and regular software updates.",
+    make: "Tesla",
+    model: "Model Y Long Range",
+    createdAt: "2023-09-01T12:00:00Z"
   },
   {
     id: "10",
@@ -130,7 +166,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u10",
       name: "Prestige Auto Gallery"
-    }
+    },
+    description: "Luxury Bentley Continental GT with exceptional craftsmanship. Powerful engine with smooth performance.",
+    make: "Bentley",
+    model: "Continental GT",
+    createdAt: "2023-04-18T09:20:00Z"
   },
   {
     id: "11",
@@ -143,7 +183,11 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u11",
       name: "Adventure Motors"
-    }
+    },
+    description: "Off-road ready Jeep Wrangler with upgraded suspension and tires. Perfect for weekend adventures.",
+    make: "Jeep",
+    model: "Wrangler Rubicon",
+    createdAt: "2023-07-22T11:15:00Z"
   },
   {
     id: "12",
@@ -156,6 +200,10 @@ export const sampleCars: CarListing[] = [
     seller: {
       id: "u12",
       name: "Kings Auto Luxury"
-    }
+    },
+    description: "Iconic G-Wagon with AMG performance. Luxurious interior with advanced technology and commanding presence.",
+    make: "Mercedes-Benz",
+    model: "G-Class G 63 AMG",
+    createdAt: "2023-08-15T14:50:00Z"
   }
 ];
