@@ -180,17 +180,6 @@ const CarDetails = () => {
                 </div>
               </div>
             </Card>
-
-            {/* Safety Tips */}
-            <Card className="p-6 bg-orange-50 border-orange-200">
-              <h3 className="font-medium mb-2 text-orange-800">Safety Tips</h3>
-              <ul className="text-sm text-orange-700 space-y-2">
-                <li>• Meet in a safe public place</li>
-                <li>• Verify the vehicle's history and documents</li>
-                <li>• Test drive only after verifying seller's identity</li>
-                <li>• Don't make payments before seeing the vehicle</li>
-              </ul>
-            </Card>
           </div>
         </div>
       </div>
