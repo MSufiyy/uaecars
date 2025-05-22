@@ -19,9 +19,10 @@ const Register = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize data from localStorage to IndexedDB on first visit
+  // Initialize data from localStorage to IndexedDB on component mount
   useEffect(() => {
     const init = async () => {
+      console.log("Initializing data on register page");
       await initializeFromLocalStorage();
     };
     init();
@@ -66,7 +67,7 @@ const Register = () => {
         createdAt: new Date().toISOString()
       };
       
-      // Save user to IndexedDB
+      // Save user to both localStorage and IndexedDB
       const result = await saveUser(newUser);
       
       if (result) {

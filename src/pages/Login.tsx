@@ -16,9 +16,10 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize data from localStorage to IndexedDB on first visit
+  // Initialize data from localStorage to IndexedDB on component mount
   useEffect(() => {
     const init = async () => {
+      console.log("Initializing data on login page");
       await initializeFromLocalStorage();
     };
     init();
@@ -29,8 +30,12 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      // Initialize data again before login attempt to ensure sync
+      await initializeFromLocalStorage();
+      
       // Find user with matching email
       const user = await getUserByEmail(email);
+      console.log("Login attempt for email:", email, "User found:", !!user);
       
       if (user && user.password === password) {
         // Set current user

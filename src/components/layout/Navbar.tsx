@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, X, Car } from "lucide-react";
 import { toast } from "sonner";
-import { getCurrentUser } from "@/utils/persistentStorage";
+import { getCurrentUser, setCurrentUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,6 +15,9 @@ const Navbar = () => {
   useEffect(() => {
     // Check if user is logged in using our persistent storage
     const checkLoginStatus = async () => {
+      // Initialize data first to ensure all data is synced
+      await initializeFromLocalStorage();
+      
       const userData = await getCurrentUser();
       if (userData) {
         setIsLoggedIn(true);
@@ -26,7 +29,7 @@ const Navbar = () => {
   }, []);
   
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+    setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentUser(null);
     toast("Successfully logged out");
