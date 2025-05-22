@@ -12,6 +12,7 @@ const Index = () => {
   useEffect(() => {
     const init = async () => {
       console.log("Initializing data on homepage");
+      // Run initialization with a clean refresh to ensure syncing across browsers
       await initializeFromLocalStorage();
     };
     init();

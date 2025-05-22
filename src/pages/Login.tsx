@@ -20,6 +20,7 @@ const Login = () => {
   useEffect(() => {
     const init = async () => {
       console.log("Initializing data on login page");
+      // Force a complete reload of data
       await initializeFromLocalStorage();
     };
     init();
@@ -38,14 +39,16 @@ const Login = () => {
       console.log("Login attempt for email:", email, "User found:", !!user);
       
       if (user && user.password === password) {
-        // Set current user
-        setCurrentUser({
+        // Set current user - pass only the necessary info to avoid stale data issues
+        const userProfile = {
           id: user.id,
           name: user.name,
           email: user.email,
           phone: user.phone || "",
           location: user.location || ""
-        });
+        };
+        
+        await setCurrentUser(userProfile);
         
         toast({
           title: "Login successful",

@@ -9,30 +9,45 @@ import { getCurrentUser, setCurrentUser, initializeFromLocalStorage } from "@/ut
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setLocalCurrentUser] = useState<any>(null);
   const navigate = useNavigate();
+  
+  // Function to check login status - define it outside useEffect so we can call it when needed
+  const checkLoginStatus = async () => {
+    // Initialize data first to ensure all data is synced
+    await initializeFromLocalStorage();
+    
+    const userData = await getCurrentUser();
+    if (userData) {
+      setIsLoggedIn(true);
+      setLocalCurrentUser(userData);
+    } else {
+      // Make sure we clear state if no user is found
+      setIsLoggedIn(false);
+      setLocalCurrentUser(null);
+    }
+  };
   
   useEffect(() => {
     // Check if user is logged in using our persistent storage
-    const checkLoginStatus = async () => {
-      // Initialize data first to ensure all data is synced
-      await initializeFromLocalStorage();
-      
-      const userData = await getCurrentUser();
-      if (userData) {
-        setIsLoggedIn(true);
-        setCurrentUser(userData);
-      }
-    };
-    
     checkLoginStatus();
   }, []);
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear the current user in storage
     setCurrentUser(null);
+    
+    // Clear local state
     setIsLoggedIn(false);
-    setCurrentUser(null);
+    setLocalCurrentUser(null);
+    
+    // Show logout message
     toast("Successfully logged out");
+    
+    // Force a reload of storage data to ensure sync across the app
+    await initializeFromLocalStorage();
+    
+    // Navigate home
     navigate("/");
   };
 
@@ -66,7 +81,7 @@ const Navbar = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            {isLoggedIn ? (
+            {isLoggedIn && currentUser ? (
               <>
                 <Link to="/profile">
                   <Button variant="outline" className="flex items-center gap-2">
@@ -131,7 +146,7 @@ const Navbar = () => {
               Sell Your Car
             </Link>
             <div className="pt-2 border-t border-gray-100">
-              {isLoggedIn ? (
+              {isLoggedIn && currentUser ? (
                 <>
                   <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
                     <Button variant="outline" className="w-full mb-2 flex items-center justify-center gap-2">

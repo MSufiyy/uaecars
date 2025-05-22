@@ -420,10 +420,20 @@ export const setCurrentUser = (user: {
   location?: string;
 } | null): void => {
   if (user) {
+    // Store in localStorage
     localStorage.setItem("currentUser", JSON.stringify(user));
     console.log("Current user set:", user.name);
+    
+    // Make sure the SessionStorage is also cleared (for extra compatibility across browsers)
+    sessionStorage.removeItem("logoutPending");
   } else {
+    // Clear from localStorage
     localStorage.removeItem("currentUser");
+    
+    // Set a flag in SessionStorage that logout was performed
+    // This helps with cross-tab/cross-browser scenarios
+    sessionStorage.setItem("logoutPending", "true");
+    
     console.log("Current user cleared");
   }
 };
@@ -432,6 +442,13 @@ export const setCurrentUser = (user: {
 export const initializeFromLocalStorage = async () => {
   try {
     console.log("Initializing data from localStorage to IndexedDB");
+    
+    // Check if we have a pending logout operation
+    if (sessionStorage.getItem("logoutPending") === "true") {
+      // Clear the current user if there's a pending logout
+      localStorage.removeItem("currentUser");
+      sessionStorage.removeItem("logoutPending");
+    }
     
     // Migrate users
     const usersJSON = localStorage.getItem("users");

@@ -18,7 +18,7 @@ const CtaSection = () => {
               </Button>
             </Link>
             <Link to="/browse">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button size="lg" variant="outline" className="border-white text-black hover:bg-white/10 bg-white hover:text-white">
                 Browse Cars
               </Button>
             </Link>
