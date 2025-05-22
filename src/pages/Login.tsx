@@ -16,9 +16,12 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize data from localStorage on first visit
+  // Initialize data from localStorage to IndexedDB on first visit
   useEffect(() => {
-    initializeFromLocalStorage();
+    const init = async () => {
+      await initializeFromLocalStorage();
+    };
+    init();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

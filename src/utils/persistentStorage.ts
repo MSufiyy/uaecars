@@ -1,3 +1,4 @@
+
 import { CarListing } from "@/components/cars/CarCard";
 
 // File paths for IndexedDB data
@@ -159,10 +160,12 @@ export const saveListing = async (car: CarListing): Promise<boolean> => {
       
       request.onsuccess = () => {
         console.log("Car listing saved successfully:", car.id);
+        
         // Make sure localStorage is completely in sync - important for persistence
         const listingsJSON = localStorage.getItem("carListings");
         let allListings = listingsJSON ? JSON.parse(listingsJSON) : [];
         
+        // Find and update or add the listing
         const existingIndex = allListings.findIndex((c: CarListing) => c.id === car.id);
         if (existingIndex !== -1) {
           allListings[existingIndex] = car;
@@ -315,6 +318,7 @@ export const setCurrentUser = (user: {
 export const initializeFromLocalStorage = async () => {
   try {
     console.log("Initializing data from localStorage to IndexedDB");
+    
     // Migrate users
     const usersJSON = localStorage.getItem("users");
     if (usersJSON) {

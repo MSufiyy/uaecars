@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, X, Car } from "lucide-react";
 import { toast } from "sonner";
+import { getCurrentUser } from "@/utils/persistentStorage";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,12 +13,16 @@ const Navbar = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if user is logged in
-    const userJSON = localStorage.getItem("currentUser");
-    if (userJSON) {
-      setIsLoggedIn(true);
-      setCurrentUser(JSON.parse(userJSON));
-    }
+    // Check if user is logged in using our persistent storage
+    const checkLoginStatus = async () => {
+      const userData = await getCurrentUser();
+      if (userData) {
+        setIsLoggedIn(true);
+        setCurrentUser(userData);
+      }
+    };
+    
+    checkLoginStatus();
   }, []);
   
   const handleLogout = () => {
@@ -45,7 +50,7 @@ const Navbar = () => {
               Home
             </Link>
             <Link to="/browse" className="text-foreground hover:text-car-primary transition-colors">
-              Buy Cars
+              Browse Cars
             </Link>
             <Link to="/sell" className="text-foreground hover:text-car-primary transition-colors">
               Sell Your Car

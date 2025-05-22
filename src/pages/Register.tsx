@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { getUserByEmail, saveUser, getUsers, initializeFromLocalStorage } from "@/utils/persistentStorage";
+import { getUserByEmail, saveUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -19,9 +19,12 @@ const Register = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize data from localStorage on first visit
+  // Initialize data from localStorage to IndexedDB on first visit
   useEffect(() => {
-    initializeFromLocalStorage();
+    const init = async () => {
+      await initializeFromLocalStorage();
+    };
+    init();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,7 +66,7 @@ const Register = () => {
         createdAt: new Date().toISOString()
       };
       
-      // Add to users array
+      // Save user to IndexedDB
       const result = await saveUser(newUser);
       
       if (result) {
