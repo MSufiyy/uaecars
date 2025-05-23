@@ -19,6 +19,7 @@ export const signUp = async (email: string, password: string, name: string, phon
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/login`,
         data: {
           name,
           phone
@@ -26,7 +27,28 @@ export const signUp = async (email: string, password: string, name: string, phon
       }
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      // Check for specific error types to provide better feedback
+      if (authError.message.includes('rate limit') || authError.message.includes('seconds')) {
+        return { 
+          success: false, 
+          error: { 
+            message: "Please try again in a minute. The authentication system has rate limiting to prevent abuse." 
+          } 
+        };
+      }
+      
+      if (authError.message.includes('password')) {
+        return { 
+          success: false, 
+          error: { 
+            message: "Please use a stronger password (minimum 6 characters with a mix of letters and numbers)" 
+          } 
+        };
+      }
+      
+      throw authError;
+    }
     
     // If sign up successful, create profile
     if (authData.user) {

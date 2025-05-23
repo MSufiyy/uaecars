@@ -32,6 +32,16 @@ const Register = () => {
       return;
     }
     
+    // Basic password strength check - only enforce minimum length
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Password too weak",
+        description: "Password must be at least 6 characters long.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -40,7 +50,7 @@ const Register = () => {
       if (result.success) {
         toast({
           title: "Registration successful",
-          description: "Your account has been created successfully.",
+          description: "Your account has been created successfully. Please check your email for verification.",
         });
         
         // Redirect to login
@@ -59,7 +69,7 @@ const Register = () => {
       toast({
         variant: "destructive",
         title: "Registration failed",
-        description: "An error occurred during registration.",
+        description: "An error occurred during registration. Please try again later.",
       });
     } finally {
       setIsLoading(false);
@@ -119,6 +129,9 @@ const Register = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Minimum 6 characters required
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
