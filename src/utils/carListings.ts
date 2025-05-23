@@ -57,6 +57,17 @@ export const createCarListing = async (
     
     if (error) throw error;
     
+    // Get the user profile information
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('name, phone')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching profile data:', profileError);
+    }
+
     // Format the response to match the CarListing type
     const formattedListing: CarListing = {
       id: data.id,
@@ -71,8 +82,8 @@ export const createCarListing = async (
       imageUrl: data.image_url,
       seller: {
         id: user.id,
-        name: user.user_metadata?.name || 'User',
-        phone: user.user_metadata?.phone
+        name: profileData?.name || user.user_metadata?.name || 'User',
+        phone: profileData?.phone || user.user_metadata?.phone
       },
       createdAt: data.created_at
     };
@@ -87,38 +98,49 @@ export const createCarListing = async (
 // Get all car listings
 export const getAllCarListings = async (): Promise<CarListing[]> => {
   try {
-    const { data, error } = await supabase
+    // First, get all car listings
+    const { data: listings, error } = await supabase
       .from('car_listings')
-      .select(`
-        *,
-        profiles:user_id (
-          name,
-          phone
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    // Format the listings to match the CarListing type
-    const formattedListings: CarListing[] = data.map(listing => ({
-      id: listing.id,
-      title: listing.title,
-      make: listing.make,
-      model: listing.model,
-      year: listing.year,
-      price: listing.price,
-      mileage: listing.mileage,
-      location: listing.location,
-      description: listing.description,
-      imageUrl: listing.image_url,
-      seller: {
-        id: listing.user_id,
-        name: listing.profiles?.name || 'User',
-        phone: listing.profiles?.phone
-      },
-      createdAt: listing.created_at
-    }));
+    // Then, for each listing, get the seller's profile data
+    const formattedListings: CarListing[] = await Promise.all(
+      listings.map(async (listing) => {
+        // Get profile data for this seller
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name, phone')
+          .eq('id', listing.user_id)
+          .single();
+        
+        if (profileError) {
+          console.error(`Error fetching profile for user ${listing.user_id}:`, profileError);
+        }
+
+        // Format to match CarListing type
+        return {
+          id: listing.id,
+          title: listing.title,
+          make: listing.make,
+          model: listing.model,
+          year: listing.year,
+          price: listing.price,
+          mileage: listing.mileage,
+          location: listing.location,
+          description: listing.description,
+          imageUrl: listing.image_url,
+          seller: {
+            id: listing.user_id,
+            name: profileData?.name || 'User',
+            phone: profileData?.phone
+          },
+          createdAt: listing.created_at
+        };
+      })
+    );
     
     return formattedListings;
   } catch (error) {
@@ -132,17 +154,22 @@ export const getCarListing = async (id: string): Promise<CarListing | null> => {
   try {
     const { data, error } = await supabase
       .from('car_listings')
-      .select(`
-        *,
-        profiles:user_id (
-          name,
-          phone
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single();
     
     if (error) throw error;
+
+    // Get profile data for the seller
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('name, phone')
+      .eq('id', data.user_id)
+      .single();
+    
+    if (profileError) {
+      console.error(`Error fetching profile for user ${data.user_id}:`, profileError);
+    }
     
     // Format the listing to match the CarListing type
     const formattedListing: CarListing = {
@@ -158,8 +185,8 @@ export const getCarListing = async (id: string): Promise<CarListing | null> => {
       imageUrl: data.image_url,
       seller: {
         id: data.user_id,
-        name: data.profiles?.name || 'User',
-        phone: data.profiles?.phone
+        name: profileData?.name || 'User',
+        phone: profileData?.phone
       },
       createdAt: data.created_at
     };
@@ -174,22 +201,28 @@ export const getCarListing = async (id: string): Promise<CarListing | null> => {
 // Get car listings by user
 export const getUserCarListings = async (userId: string): Promise<CarListing[]> => {
   try {
-    const { data, error } = await supabase
+    // First, get all car listings for this user
+    const { data: listings, error } = await supabase
       .from('car_listings')
-      .select(`
-        *,
-        profiles:user_id (
-          name,
-          phone
-        )
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     
+    // Get profile data for the user
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('name, phone')
+      .eq('id', userId)
+      .single();
+    
+    if (profileError) {
+      console.error(`Error fetching profile for user ${userId}:`, profileError);
+    }
+    
     // Format the listings to match the CarListing type
-    const formattedListings: CarListing[] = data.map(listing => ({
+    const formattedListings: CarListing[] = listings.map(listing => ({
       id: listing.id,
       title: listing.title,
       make: listing.make,
@@ -201,9 +234,9 @@ export const getUserCarListings = async (userId: string): Promise<CarListing[]> 
       description: listing.description,
       imageUrl: listing.image_url,
       seller: {
-        id: listing.user_id,
-        name: listing.profiles?.name || 'User',
-        phone: listing.profiles?.phone
+        id: userId,
+        name: profileData?.name || 'User',
+        phone: profileData?.phone
       },
       createdAt: listing.created_at
     }));
