@@ -10,24 +10,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Phone, MapPin } from "lucide-react";
 import { CarListing } from "@/components/cars/CarCard";
-import { getCurrentUser, updateUser, getUserByEmail, getListingsByUser } from "@/utils/persistentStorage";
+import { useAuth } from "@/contexts/AuthContext";
+import { updateUserProfile } from "@/utils/auth";
+import { getUserCarListings } from "@/utils/carListings";
 
 const Profile = () => {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user, profile } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [userListings, setUserListings] = useState<CarListing[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
       // Check if user is logged in
-      const userData = await getCurrentUser();
-      if (!userData) {
+      if (!user) {
         toast({
           title: "Not logged in",
           description: "Please log in to view your profile",
@@ -37,53 +38,47 @@ const Profile = () => {
         return;
       }
       
-      // Get full user data including password for update operations
-      const fullUser = await getUserByEmail(userData.email);
-      
-      if (fullUser) {
-        setCurrentUser(fullUser);
-        setName(fullUser.name || "");
-        setEmail(fullUser.email || "");
-        setPhone(fullUser.phone || "");
-        setLocation(fullUser.location || "");
-        
-        // Get user's car listings
-        const userCars = await getListingsByUser(fullUser.id);
-        setUserListings(userCars);
-      } else {
-        toast({
-          title: "User not found",
-          description: "There was a problem loading your profile",
-          variant: "destructive",
-        });
-        navigate("/login");
+      if (profile) {
+        setName(profile.name || "");
+        setPhone(profile.phone || "");
+        setLocation(profile.location || "");
       }
+      
+      // Get user's car listings
+      if (user) {
+        const userCars = await getUserCarListings(user.id);
+        setUserListings(userCars);
+      }
+      
+      setLoading(false);
     };
     
     fetchUserData();
-  }, [navigate, toast]);
+  }, [user, profile, navigate, toast]);
 
   const handleSaveProfile = async () => {
-    if (!currentUser) return;
+    if (!user) return;
     
     try {
-      // Update current user
-      const updatedUser = {
-        ...currentUser,
+      // Update user profile
+      const updatedProfile = {
+        id: user.id,
         name,
         phone,
         location
       };
       
-      const success = await updateUser(updatedUser);
+      const result = await updateUserProfile(updatedProfile);
       
-      if (success) {
-        setCurrentUser(updatedUser);
+      if (result.success) {
         setEditMode(false);
         toast({
           title: "Profile updated",
           description: "Your profile has been updated successfully",
         });
+        
+        // Force reload to get updated profile
+        window.location.reload();
       } else {
         throw new Error("Failed to update profile");
       }
@@ -97,7 +92,7 @@ const Profile = () => {
     }
   };
 
-  if (!currentUser) {
+  if (!user || loading) {
     return (
       <MainLayout>
         <div className="car-container py-12">
@@ -134,11 +129,11 @@ const Profile = () => {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <div className="bg-car-primary h-20 w-20 rounded-full flex items-center justify-center text-white text-2xl">
-                    {name.charAt(0).toUpperCase()}
+                    {profile?.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold">{name}</h3>
-                    <p className="text-muted-foreground">{email}</p>
+                    <h3 className="text-xl font-semibold">{profile?.name}</h3>
+                    <p className="text-muted-foreground">{profile?.email}</p>
                   </div>
                 </div>
                 
@@ -158,7 +153,7 @@ const Profile = () => {
                       <Input 
                         id="email"
                         type="email"
-                        value={email}
+                        value={profile?.email || ""}
                         disabled
                         className="bg-gray-100"
                       />
@@ -190,7 +185,7 @@ const Profile = () => {
                       <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-sm text-muted-foreground">Name</p>
-                        <p>{name}</p>
+                        <p>{profile?.name}</p>
                       </div>
                     </div>
                     
@@ -198,7 +193,7 @@ const Profile = () => {
                       <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-sm text-muted-foreground">Phone</p>
-                        <p>{phone || "Not provided"}</p>
+                        <p>{profile?.phone || "Not provided"}</p>
                       </div>
                     </div>
                     
@@ -206,7 +201,7 @@ const Profile = () => {
                       <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-sm text-muted-foreground">Location</p>
-                        <p>{location || "Not provided"}</p>
+                        <p>{profile?.location || "Not provided"}</p>
                       </div>
                     </div>
                   </div>
@@ -219,9 +214,9 @@ const Profile = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        setName(currentUser.name || "");
-                        setPhone(currentUser.phone || "");
-                        setLocation(currentUser.location || "");
+                        setName(profile?.name || "");
+                        setPhone(profile?.phone || "");
+                        setLocation(profile?.location || "");
                         setEditMode(false);
                       }}
                       className="w-full"

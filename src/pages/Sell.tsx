@@ -18,7 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { CarListing } from "@/components/cars/CarCard";
-import { saveListing, getCurrentUser } from "@/utils/persistentStorage";
+import { createCarListing } from "@/utils/carListings";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Generate years from 1990 to current year
 const generateYears = () => {
@@ -48,25 +49,17 @@ type FormValues = {
 
 const Sell = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
     // Check if user is logged in
-    const checkLoginStatus = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        setIsLoggedIn(true);
-        setCurrentUser(user);
-      } else {
-        toast("Please login to sell your car");
-        navigate("/login");
-      }
-    };
-    
-    checkLoginStatus();
-  }, [navigate]);
+    if (!user) {
+      toast("Please login to sell your car");
+      navigate("/login");
+    }
+  }, [user, navigate]);
   
   const form = useForm<FormValues>({
     defaultValues: {
@@ -83,6 +76,7 @@ const Sell = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -92,21 +86,20 @@ const Sell = () => {
   };
 
   const onSubmit = async (data: FormValues) => {
-    if (!isLoggedIn || !currentUser) {
+    if (!user) {
       toast.error("You must be logged in to sell a car");
       navigate("/login");
       return;
     }
     
-    if (!imagePreview) {
+    if (!imageFile && !imagePreview) {
       toast.error("Please upload an image of your car");
       return;
     }
     
     try {
-      // Create new listing
-      const newListing: CarListing = {
-        id: Date.now().toString(),
+      // Create listing data
+      const listingData: Omit<CarListing, 'id' | 'createdAt'> = {
         title: `${data.year} ${data.make} ${data.model}`,
         make: data.make,
         model: data.model,
@@ -115,27 +108,29 @@ const Sell = () => {
         mileage: Number(data.mileage),
         location: data.location,
         description: data.description,
-        imageUrl: imagePreview,
+        imageUrl: imagePreview || '',
         seller: {
-          id: currentUser.id,
-          name: currentUser.name,
-          phone: currentUser.phone || undefined,
-        },
-        createdAt: new Date().toISOString()
+          id: user.id,
+          name: user.user_metadata?.name || 'User',
+          phone: user.user_metadata?.phone || undefined,
+        }
       };
       
-      // Save to IndexedDB using the persistentStorage utility
-      const success = await saveListing(newListing);
+      // Save listing using Supabase
+      const result = await createCarListing(listingData, imageFile || undefined);
       
-      if (success) {
+      if (result.success) {
         toast.success("Your car has been listed for sale successfully!");
         form.reset();
         setImagePreview(null);
+        setImageFile(null);
         
         // Redirect to browse page
         navigate("/browse");
       } else {
-        toast.error("Failed to list your car. Please try again.");
+        // @ts-ignore
+        const errorMsg = result.error?.message || "Failed to list your car. Please try again.";
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("Error saving listing:", error);
@@ -143,7 +138,7 @@ const Sell = () => {
     }
   };
 
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <MainLayout>
         <div className="car-container py-12">

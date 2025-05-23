@@ -3,18 +3,15 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
 import { Link } from "react-router-dom";
-
-// Create a file module for handling persistent user data
-import { loadListings } from "@/utils/persistentStorage";
+import { getAllCarListings } from "@/utils/carListings";
 
 const FeaturedListings = () => {
   const [featuredCars, setFeaturedCars] = useState<CarListing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get car listings from persistent storage
     const loadCarListings = async () => {
-      const allListings = await loadListings();
+      const allListings = await getAllCarListings();
       
       // Sort by newest first and take up to 6
       if (allListings && allListings.length > 0) {

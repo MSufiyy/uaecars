@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { getUserByEmail, setCurrentUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
+import { signIn } from "@/utils/auth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,40 +16,14 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Initialize data from localStorage to IndexedDB on component mount
-  useEffect(() => {
-    const init = async () => {
-      console.log("Initializing data on login page");
-      // Force a complete reload of data
-      await initializeFromLocalStorage();
-    };
-    init();
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      // Initialize data again before login attempt to ensure sync
-      await initializeFromLocalStorage();
+      const result = await signIn(email, password);
       
-      // Find user with matching email
-      const user = await getUserByEmail(email);
-      console.log("Login attempt for email:", email, "User found:", !!user);
-      
-      if (user && user.password === password) {
-        // Set current user - pass only the necessary info to avoid stale data issues
-        const userProfile = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || "",
-          location: user.location || ""
-        };
-        
-        await setCurrentUser(userProfile);
-        
+      if (result.success) {
         toast({
           title: "Login successful",
           description: "You have been logged in successfully.",
@@ -57,10 +31,12 @@ const Login = () => {
         
         navigate("/");
       } else {
+        // @ts-ignore - Error handling
+        const errorMsg = result.error?.message || "Please check your credentials and try again.";
         toast({
           variant: "destructive",
           title: "Login failed",
-          description: "Please check your credentials and try again.",
+          description: errorMsg,
         });
       }
     } catch (error) {
