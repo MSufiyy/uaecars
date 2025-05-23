@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { signUp } from "@/utils/auth";
+import { getUserByEmail, saveUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -18,6 +18,15 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Initialize data from localStorage to IndexedDB on component mount
+  useEffect(() => {
+    const init = async () => {
+      console.log("Initializing data on register page");
+      await initializeFromLocalStorage();
+    };
+    init();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,44 +41,52 @@ const Register = () => {
       return;
     }
     
-    // Basic password strength check - only enforce minimum length
-    if (password.length < 6) {
-      toast({
-        variant: "destructive",
-        title: "Password too weak",
-        description: "Password must be at least 6 characters long.",
-      });
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
-      const result = await signUp(email, password, name, phone);
+      // Check if email already exists
+      const existingUser = await getUserByEmail(email);
       
-      if (result.success) {
+      if (existingUser) {
+        toast({
+          variant: "destructive",
+          title: "Email already in use",
+          description: "Please use a different email address.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Create new user
+      const newUser = {
+        id: Date.now().toString(),
+        name,
+        email,
+        password,
+        phone,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Save user to both localStorage and IndexedDB
+      const result = await saveUser(newUser);
+      
+      if (result) {
         toast({
           title: "Registration successful",
-          description: "Your account has been created successfully. Please check your email for verification.",
+          description: "Your account has been created successfully.",
         });
         
         // Redirect to login
         navigate("/login");
       } else {
-        // @ts-ignore - Error handling
-        const errorMsg = result.error?.message || "An error occurred during registration.";
-        toast({
-          variant: "destructive",
-          title: "Registration failed",
-          description: errorMsg,
-        });
+        throw new Error("Failed to save user");
       }
     } catch (error) {
       console.error("Registration error:", error);
       toast({
         variant: "destructive",
         title: "Registration failed",
-        description: "An error occurred during registration. Please try again later.",
+        description: "An error occurred during registration.",
       });
     } finally {
       setIsLoading(false);
@@ -129,9 +146,6 @@ const Register = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Minimum 6 characters required
-                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>

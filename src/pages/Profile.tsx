@@ -10,25 +10,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { User, Phone, MapPin } from "lucide-react";
 import { CarListing } from "@/components/cars/CarCard";
-import { useAuth } from "@/contexts/AuthContext";
-import { updateUserProfile } from "@/utils/auth";
-import { getUserCarListings } from "@/utils/carListings";
+import { getCurrentUser, updateUser, getUserByEmail, getListingsByUser } from "@/utils/persistentStorage";
 
 const Profile = () => {
-  const { user, profile } = useAuth();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [userListings, setUserListings] = useState<CarListing[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
       // Check if user is logged in
-      if (!user) {
+      const userData = await getCurrentUser();
+      if (!userData) {
         toast({
           title: "Not logged in",
           description: "Please log in to view your profile",
@@ -38,47 +37,53 @@ const Profile = () => {
         return;
       }
       
-      if (profile) {
-        setName(profile.name || "");
-        setPhone(profile.phone || "");
-        setLocation(profile.location || "");
-      }
+      // Get full user data including password for update operations
+      const fullUser = await getUserByEmail(userData.email);
       
-      // Get user's car listings
-      if (user) {
-        const userCars = await getUserCarListings(user.id);
+      if (fullUser) {
+        setCurrentUser(fullUser);
+        setName(fullUser.name || "");
+        setEmail(fullUser.email || "");
+        setPhone(fullUser.phone || "");
+        setLocation(fullUser.location || "");
+        
+        // Get user's car listings
+        const userCars = await getListingsByUser(fullUser.id);
         setUserListings(userCars);
+      } else {
+        toast({
+          title: "User not found",
+          description: "There was a problem loading your profile",
+          variant: "destructive",
+        });
+        navigate("/login");
       }
-      
-      setLoading(false);
     };
     
     fetchUserData();
-  }, [user, profile, navigate, toast]);
+  }, [navigate, toast]);
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!currentUser) return;
     
     try {
-      // Update user profile
-      const updatedProfile = {
-        id: user.id,
+      // Update current user
+      const updatedUser = {
+        ...currentUser,
         name,
         phone,
         location
       };
       
-      const result = await updateUserProfile(updatedProfile);
+      const success = await updateUser(updatedUser);
       
-      if (result.success) {
+      if (success) {
+        setCurrentUser(updatedUser);
         setEditMode(false);
         toast({
           title: "Profile updated",
           description: "Your profile has been updated successfully",
         });
-        
-        // Force reload to get updated profile
-        window.location.reload();
       } else {
         throw new Error("Failed to update profile");
       }
@@ -92,7 +97,7 @@ const Profile = () => {
     }
   };
 
-  if (!user || loading) {
+  if (!currentUser) {
     return (
       <MainLayout>
         <div className="car-container py-12">
@@ -129,11 +134,11 @@ const Profile = () => {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <div className="bg-car-primary h-20 w-20 rounded-full flex items-center justify-center text-white text-2xl">
-                    {profile?.name.charAt(0).toUpperCase()}
+                    {name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold">{profile?.name}</h3>
-                    <p className="text-muted-foreground">{profile?.email}</p>
+                    <h3 className="text-xl font-semibold">{name}</h3>
+                    <p className="text-muted-foreground">{email}</p>
                   </div>
                 </div>
                 
@@ -153,7 +158,7 @@ const Profile = () => {
                       <Input 
                         id="email"
                         type="email"
-                        value={profile?.email || ""}
+                        value={email}
                         disabled
                         className="bg-gray-100"
                       />
@@ -185,7 +190,7 @@ const Profile = () => {
                       <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-sm text-muted-foreground">Name</p>
-                        <p>{profile?.name}</p>
+                        <p>{name}</p>
                       </div>
                     </div>
                     
@@ -193,7 +198,7 @@ const Profile = () => {
                       <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-sm text-muted-foreground">Phone</p>
-                        <p>{profile?.phone || "Not provided"}</p>
+                        <p>{phone || "Not provided"}</p>
                       </div>
                     </div>
                     
@@ -201,7 +206,7 @@ const Profile = () => {
                       <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-sm text-muted-foreground">Location</p>
-                        <p>{profile?.location || "Not provided"}</p>
+                        <p>{location || "Not provided"}</p>
                       </div>
                     </div>
                   </div>
@@ -214,9 +219,9 @@ const Profile = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        setName(profile?.name || "");
-                        setPhone(profile?.phone || "");
-                        setLocation(profile?.location || "");
+                        setName(currentUser.name || "");
+                        setPhone(currentUser.phone || "");
+                        setLocation(currentUser.location || "");
                         setEditMode(false);
                       }}
                       className="w-full"

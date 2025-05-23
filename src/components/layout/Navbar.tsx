@@ -1,29 +1,54 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X } from "lucide-react";
+import { Search, User, Menu, X, Car } from "lucide-react";
 import { toast } from "sonner";
-import { signOut } from "@/utils/auth";
-import { useAuth } from "@/contexts/AuthContext";
+import { getCurrentUser, setCurrentUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, profile } = useAuth();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setLocalCurrentUser] = useState<any>(null);
   const navigate = useNavigate();
   
-  const handleLogout = async () => {
-    const result = await signOut();
+  // Function to check login status - define it outside useEffect so we can call it when needed
+  const checkLoginStatus = async () => {
+    // Initialize data first to ensure all data is synced
+    await initializeFromLocalStorage();
     
-    if (result.success) {
-      // Show logout message
-      toast("Successfully logged out");
-      
-      // Navigate home
-      navigate("/");
+    const userData = await getCurrentUser();
+    if (userData) {
+      setIsLoggedIn(true);
+      setLocalCurrentUser(userData);
     } else {
-      toast.error("Failed to log out. Please try again.");
+      // Make sure we clear state if no user is found
+      setIsLoggedIn(false);
+      setLocalCurrentUser(null);
     }
+  };
+  
+  useEffect(() => {
+    // Check if user is logged in using our persistent storage
+    checkLoginStatus();
+  }, []);
+  
+  const handleLogout = async () => {
+    // Clear the current user in storage
+    setCurrentUser(null);
+    
+    // Clear local state
+    setIsLoggedIn(false);
+    setLocalCurrentUser(null);
+    
+    // Show logout message
+    toast("Successfully logged out");
+    
+    // Force a reload of storage data to ensure sync across the app
+    await initializeFromLocalStorage();
+    
+    // Navigate home
+    navigate("/");
   };
 
   return (
@@ -56,12 +81,12 @@ const Navbar = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            {user ? (
+            {isLoggedIn && currentUser ? (
               <>
                 <Link to="/profile">
                   <Button variant="outline" className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    <span>{profile?.name || "Profile"}</span>
+                    <span>{currentUser?.name || "Profile"}</span>
                   </Button>
                 </Link>
                 <Button onClick={handleLogout}>Logout</Button>
@@ -121,12 +146,12 @@ const Navbar = () => {
               Sell Your Car
             </Link>
             <div className="pt-2 border-t border-gray-100">
-              {user ? (
+              {isLoggedIn && currentUser ? (
                 <>
                   <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
                     <Button variant="outline" className="w-full mb-2 flex items-center justify-center gap-2">
                       <User className="h-4 w-4" />
-                      {profile?.name || "Profile"}
+                      {currentUser?.name || "Profile"}
                     </Button>
                   </Link>
                   <Button onClick={() => {
