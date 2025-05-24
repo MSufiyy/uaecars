@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { useForm } from "react-hook-form";
@@ -17,8 +18,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { CarListing } from "@/components/cars/CarCard";
-import { saveListing, getCurrentUser } from "@/utils/persistentStorage";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
 
 // Generate years from 1990 to current year
 const generateYears = () => {
@@ -48,25 +50,9 @@ type FormValues = {
 
 const Sell = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    // Check if user is logged in
-    const checkLoginStatus = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        setIsLoggedIn(true);
-        setCurrentUser(user);
-      } else {
-        toast("Please login to sell your car");
-        navigate("/login");
-      }
-    };
-    
-    checkLoginStatus();
-  }, [navigate]);
   
   const form = useForm<FormValues>({
     defaultValues: {
@@ -92,9 +78,9 @@ const Sell = () => {
   };
 
   const onSubmit = async (data: FormValues) => {
-    if (!isLoggedIn || !currentUser) {
+    if (!user || !profile) {
       toast.error("You must be logged in to sell a car");
-      navigate("/login");
+      navigate("/auth");
       return;
     }
     
@@ -104,9 +90,8 @@ const Sell = () => {
     }
     
     try {
-      // Create new listing
-      const newListing: CarListing = {
-        id: Date.now().toString(),
+      // Create new listing in Supabase
+      const newListing = {
         title: `${data.year} ${data.make} ${data.model}`,
         make: data.make,
         model: data.model,
@@ -115,42 +100,40 @@ const Sell = () => {
         mileage: Number(data.mileage),
         location: data.location,
         description: data.description,
-        imageUrl: imagePreview,
-        seller: {
-          id: currentUser.id,
-          name: currentUser.name,
-          phone: currentUser.phone || undefined,
-        },
-        createdAt: new Date().toISOString()
+        image_url: imagePreview,
+        user_id: user.id,
       };
       
-      // Save to IndexedDB using the persistentStorage utility
-      const success = await saveListing(newListing);
+      const { error } = await supabase
+        .from("car_listings")
+        .insert(newListing);
       
-      if (success) {
-        toast.success("Your car has been listed for sale successfully!");
-        form.reset();
-        setImagePreview(null);
-        
-        // Redirect to browse page
-        navigate("/browse");
-      } else {
+      if (error) {
+        console.error("Error saving listing:", error);
         toast.error("Failed to list your car. Please try again.");
+        return;
       }
+      
+      toast.success("Your car has been listed for sale successfully!");
+      form.reset();
+      setImagePreview(null);
+      
+      // Redirect to browse page
+      navigate("/browse");
     } catch (error) {
       console.error("Error saving listing:", error);
       toast.error("Failed to list your car. Please try again.");
     }
   };
 
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <MainLayout>
         <div className="car-container py-12">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Please Login</h2>
             <p className="mb-6">You need to be logged in to sell your car.</p>
-            <Button onClick={() => navigate("/login")}>Go to Login</Button>
+            <Button onClick={() => navigate("/auth")}>Go to Login</Button>
           </div>
         </div>
       </MainLayout>
