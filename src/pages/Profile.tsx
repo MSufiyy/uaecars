@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,104 +7,82 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
 import { User, Phone, MapPin } from "lucide-react";
-import { CarListing } from "@/components/cars/CarCard";
-import { getCurrentUser, updateUser, getUserByEmail, getListingsByUser } from "@/utils/persistentStorage";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user } = useAuth();
+  const { profile, loading: profileLoading, updateProfile } = useProfile();
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
-  const [userListings, setUserListings] = useState<CarListing[]>([]);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      // Check if user is logged in
-      const userData = await getCurrentUser();
-      if (!userData) {
-        toast({
-          title: "Not logged in",
-          description: "Please log in to view your profile",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
+  // Fetch user's car listings
+  const { data: userListings = [], isLoading: listingsLoading } = useQuery({
+    queryKey: ["userListings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
       
-      // Get full user data including password for update operations
-      const fullUser = await getUserByEmail(userData.email);
-      
-      if (fullUser) {
-        setCurrentUser(fullUser);
-        setName(fullUser.name || "");
-        setEmail(fullUser.email || "");
-        setPhone(fullUser.phone || "");
-        setLocation(fullUser.location || "");
-        
-        // Get user's car listings
-        const userCars = await getListingsByUser(fullUser.id);
-        setUserListings(userCars);
-      } else {
-        toast({
-          title: "User not found",
-          description: "There was a problem loading your profile",
-          variant: "destructive",
-        });
-        navigate("/login");
-      }
-    };
-    
-    fetchUserData();
-  }, [navigate, toast]);
+      const { data, error } = await supabase
+        .from("car_listings")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Initialize form fields when profile loads
+  React.useEffect(() => {
+    if (profile) {
+      setName(profile.name || "");
+      setPhone(profile.phone || "");
+      setLocation(profile.location || "");
+    }
+  }, [profile]);
 
   const handleSaveProfile = async () => {
-    if (!currentUser) return;
+    if (!profile) return;
     
-    try {
-      // Update current user
-      const updatedUser = {
-        ...currentUser,
-        name,
-        phone,
-        location
-      };
-      
-      const success = await updateUser(updatedUser);
-      
-      if (success) {
-        setCurrentUser(updatedUser);
-        setEditMode(false);
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been updated successfully",
-        });
-      } else {
-        throw new Error("Failed to update profile");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Update failed",
-        description: "Failed to update your profile. Please try again.",
-        variant: "destructive",
-      });
+    const success = await updateProfile({
+      name,
+      phone,
+      location
+    });
+    
+    if (success) {
+      setEditMode(false);
     }
   };
 
-  if (!currentUser) {
+  if (profileLoading) {
+    return (
+      <MainLayout>
+        <div className="car-container py-12">
+          <div className="text-center">
+            <div className="text-lg">Loading profile...</div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!user || !profile) {
     return (
       <MainLayout>
         <div className="car-container py-12">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Please Login</h2>
             <p className="mb-6">You need to be logged in to view your profile.</p>
-            <Button onClick={() => navigate("/login")}>Go to Login</Button>
+            <Button onClick={() => navigate("/auth")}>Go to Login</Button>
           </div>
         </div>
       </MainLayout>
@@ -138,7 +116,7 @@ const Profile = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold">{name}</h3>
-                    <p className="text-muted-foreground">{email}</p>
+                    <p className="text-muted-foreground">{profile.email}</p>
                   </div>
                 </div>
                 
@@ -158,7 +136,7 @@ const Profile = () => {
                       <Input 
                         id="email"
                         type="email"
-                        value={email}
+                        value={profile.email}
                         disabled
                         className="bg-gray-100"
                       />
@@ -219,9 +197,9 @@ const Profile = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        setName(currentUser.name || "");
-                        setPhone(currentUser.phone || "");
-                        setLocation(currentUser.location || "");
+                        setName(profile.name || "");
+                        setPhone(profile.phone || "");
+                        setLocation(profile.location || "");
                         setEditMode(false);
                       }}
                       className="w-full"
@@ -250,7 +228,9 @@ const Profile = () => {
                 </Button>
               </div>
               
-              {userListings.length === 0 ? (
+              {listingsLoading ? (
+                <div className="text-center py-12">Loading listings...</div>
+              ) : userListings.length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-12">
                     <h3 className="text-lg font-medium mb-2">You haven't listed any cars yet</h3>
@@ -268,7 +248,7 @@ const Profile = () => {
                     <Card key={listing.id} className="overflow-hidden">
                       <div className="aspect-[16/9] overflow-hidden">
                         <img 
-                          src={listing.imageUrl} 
+                          src={listing.image_url || "/placeholder.svg"} 
                           alt={listing.title} 
                           className="w-full h-full object-cover"
                         />
@@ -283,7 +263,7 @@ const Profile = () => {
                           }).format(listing.price)}
                         </p>
                         <div className="text-sm text-muted-foreground mt-2">
-                          Listed on {new Date(listing.createdAt).toLocaleDateString()}
+                          Listed on {new Date(listing.created_at).toLocaleDateString()}
                         </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-0">

@@ -1,53 +1,21 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, Car } from "lucide-react";
+import { Search, User, Menu, X } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
-import { getCurrentUser, setCurrentUser, initializeFromLocalStorage } from "@/utils/persistentStorage";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setLocalCurrentUser] = useState<any>(null);
+  const { user, signOut } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   
-  // Function to check login status - define it outside useEffect so we can call it when needed
-  const checkLoginStatus = async () => {
-    // Initialize data first to ensure all data is synced
-    await initializeFromLocalStorage();
-    
-    const userData = await getCurrentUser();
-    if (userData) {
-      setIsLoggedIn(true);
-      setLocalCurrentUser(userData);
-    } else {
-      // Make sure we clear state if no user is found
-      setIsLoggedIn(false);
-      setLocalCurrentUser(null);
-    }
-  };
-  
-  useEffect(() => {
-    // Check if user is logged in using our persistent storage
-    checkLoginStatus();
-  }, []);
-  
   const handleLogout = async () => {
-    // Clear the current user in storage
-    setCurrentUser(null);
-    
-    // Clear local state
-    setIsLoggedIn(false);
-    setLocalCurrentUser(null);
-    
-    // Show logout message
+    await signOut();
     toast("Successfully logged out");
-    
-    // Force a reload of storage data to ensure sync across the app
-    await initializeFromLocalStorage();
-    
-    // Navigate home
     navigate("/");
   };
 
@@ -81,26 +49,26 @@ const Navbar = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            {isLoggedIn && currentUser ? (
+            {user ? (
               <>
                 <Link to="/profile">
                   <Button variant="outline" className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    <span>{currentUser?.name || "Profile"}</span>
+                    <span>{profile?.name || "Profile"}</span>
                   </Button>
                 </Link>
                 <Button onClick={handleLogout}>Logout</Button>
               </>
             ) : (
               <>
-                <Link to="/login">
+                <Link to="/auth">
                   <Button variant="outline" className="flex items-center gap-2">
                     <User className="h-5 w-5" />
                     <span>Login</span>
                   </Button>
                 </Link>
-                <Link to="/register">
-                  <Button className="bg-car-primary hover:bg-car-secondary">Register</Button>
+                <Link to="/auth">
+                  <Button className="bg-car-primary hover:bg-car-secondary">Sign Up</Button>
                 </Link>
               </>
             )}
@@ -146,12 +114,12 @@ const Navbar = () => {
               Sell Your Car
             </Link>
             <div className="pt-2 border-t border-gray-100">
-              {isLoggedIn && currentUser ? (
+              {user ? (
                 <>
                   <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
                     <Button variant="outline" className="w-full mb-2 flex items-center justify-center gap-2">
                       <User className="h-4 w-4" />
-                      {currentUser?.name || "Profile"}
+                      {profile?.name || "Profile"}
                     </Button>
                   </Link>
                   <Button onClick={() => {
@@ -161,11 +129,11 @@ const Navbar = () => {
                 </>
               ) : (
                 <>
-                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
                     <Button variant="outline" className="w-full mb-2">Login</Button>
                   </Link>
-                  <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full bg-car-primary hover:bg-car-secondary">Register</Button>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full bg-car-primary hover:bg-car-secondary">Sign Up</Button>
                   </Link>
                 </>
               )}
