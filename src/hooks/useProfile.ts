@@ -33,11 +33,12 @@ export const useProfile = () => {
     if (!user) return;
 
     try {
+      // Try to fetch existing profile
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -46,13 +47,59 @@ export const useProfile = () => {
           title: "Error",
           description: "Failed to load profile",
         });
-      } else {
+        return;
+      }
+
+      if (data) {
+        // Profile exists
         setProfile(data);
+      } else {
+        // No profile exists, create one
+        console.log("No profile found for user, creating one...");
+        await createProfile();
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createProfile = async () => {
+    if (!user) return;
+
+    try {
+      const newProfile = {
+        id: user.id,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .insert(newProfile)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating profile:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create profile",
+        });
+      } else {
+        console.log("Profile created successfully:", data);
+        setProfile(data);
+        toast({
+          title: "Welcome!",
+          description: "Your profile has been created successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating profile:", error);
     }
   };
 
