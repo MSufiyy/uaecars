@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
@@ -23,53 +22,44 @@ const Browse = () => {
   useEffect(() => {
     const loadCarListings = async () => {
       try {
-        // First get all car listings
-        const { data: listings, error: listingsError } = await supabase
+        // Use a join to get car listings with profile data
+        const { data: listings, error } = await supabase
           .from('car_listings')
-          .select('*')
+          .select(`
+            *,
+            profiles!car_listings_user_id_fkey (
+              id,
+              name,
+              phone
+            )
+          `)
           .order('created_at', { ascending: false });
 
-        if (listingsError) {
-          console.error('Error fetching listings:', listingsError);
+        if (error) {
+          console.error('Error fetching listings:', error);
           return;
         }
 
         if (listings && listings.length > 0) {
-          // Get unique user IDs
-          const userIds = [...new Set(listings.map(listing => listing.user_id))];
-          
-          // Fetch profiles for these users
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, name, phone')
-            .in('id', userIds);
-
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError);
-          }
-
-          // Transform listings and match with profiles
-          const transformedListings: CarListing[] = listings.map(listing => {
-            const profile = profiles?.find(p => p.id === listing.user_id);
-            return {
-              id: listing.id,
-              title: listing.title,
-              price: listing.price,
-              year: listing.year,
-              mileage: listing.mileage,
-              location: listing.location,
-              imageUrl: listing.image_url || '',
-              description: listing.description,
-              make: listing.make,
-              model: listing.model,
-              seller: {
-                id: listing.user_id,
-                name: profile?.name || 'Unknown',
-                phone: profile?.phone
-              },
-              createdAt: listing.created_at
-            };
-          });
+          // Transform listings with profile data
+          const transformedListings: CarListing[] = listings.map(listing => ({
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            year: listing.year,
+            mileage: listing.mileage,
+            location: listing.location,
+            imageUrl: listing.image_url || '',
+            description: listing.description,
+            make: listing.make,
+            model: listing.model,
+            seller: {
+              id: listing.user_id,
+              name: listing.profiles?.name || 'Unknown',
+              phone: listing.profiles?.phone
+            },
+            createdAt: listing.created_at
+          }));
           
           setCars(transformedListings);
           setFilteredCars(transformedListings);
