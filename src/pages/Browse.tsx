@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Search, Car } from "lucide-react";
+import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Browse = () => {
   const [cars, setCars] = useState<CarListing[]>([]);
@@ -16,25 +17,69 @@ const Browse = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState([0, 1000000]);
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Get car listings from localStorage
-    const listingsJSON = localStorage.getItem("carListings");
-    if (listingsJSON) {
-      const allListings = JSON.parse(listingsJSON);
-      setCars(allListings);
-      setFilteredCars(allListings);
-    }
-    setLoading(false);
+    const loadCarListings = async () => {
+      try {
+        const { data: listings, error } = await supabase
+          .from('car_listings')
+          .select(`
+            *,
+            profiles!car_listings_user_id_fkey (
+              id,
+              name,
+              phone
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching listings:', error);
+          return;
+        }
+
+        if (listings) {
+          // Transform Supabase data to match CarListing interface
+          const transformedListings: CarListing[] = listings.map(listing => ({
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            year: listing.year,
+            mileage: listing.mileage,
+            location: listing.location,
+            imageUrl: listing.image_url || '',
+            description: listing.description,
+            make: listing.make,
+            model: listing.model,
+            seller: {
+              id: listing.user_id,
+              name: listing.profiles?.name || 'Unknown',
+              phone: listing.profiles?.phone
+            },
+            createdAt: listing.created_at
+          }));
+          
+          setCars(transformedListings);
+          setFilteredCars(transformedListings);
+        }
+      } catch (error) {
+        console.error('Error loading listings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadCarListings();
   }, []);
 
   useEffect(() => {
-    // Apply filters when any filter state changes
-    filterCars();
-  }, [searchTerm, priceRange, selectedLocation, cars]);
+    // Apply filters and sorting when any filter state changes
+    filterAndSortCars();
+  }, [searchTerm, priceRange, selectedLocation, sortBy, cars]);
 
-  const filterCars = () => {
+  const filterAndSortCars = () => {
     let filtered = cars;
     
     // Filter by search term
@@ -58,6 +103,22 @@ const Browse = () => {
         car.location === selectedLocation
       );
     }
+    
+    // Sort cars
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "price_low":
+          return a.price - b.price;
+        case "price_high":
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
     
     setFilteredCars(filtered);
   };
@@ -172,7 +233,7 @@ const Browse = () => {
                 <p className="text-muted-foreground">
                   Found <span className="font-semibold text-foreground">{filteredCars.length}</span> cars
                 </p>
-                <Select defaultValue="newest">
+                <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
