@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -222,24 +223,36 @@ const CarDetails = () => {
               )}
             </Card>
 
-            {/* Seller Info Card */}
-            <Card className="p-6">
-              <h3 className="font-medium mb-4">Seller Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <span>{car.seller.name}</span>
+            {/* Seller Info Card - Always show when user is logged in */}
+            {isLoggedIn && (
+              <Card className="p-6">
+                <h3 className="font-medium mb-4">Seller Information</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.location}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
-                  <span>{car.seller.phone}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-muted-foreground" />
-                  <span>{car.seller.location}</span>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            )}
+
+            {/* Message for non-logged-in users */}
+            {!isLoggedIn && (
+              <Card className="p-6">
+                <h3 className="font-medium mb-4">Seller Information</h3>
+                <p className="text-muted-foreground text-sm">
+                  Please <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/auth")}>login</Button> to view seller contact information.
+                </p>
+              </Card>
+            )}
           </div>
         </div>
       </div>
