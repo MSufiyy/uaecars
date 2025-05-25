@@ -5,17 +5,13 @@ import HeroBanner from "@/components/home/HeroBanner";
 import FeaturedListings from "@/components/home/FeaturedListings";
 import HowItWorks from "@/components/home/HowItWorks";
 import CtaSection from "@/components/home/CtaSection";
-import { initializeFromLocalStorage } from "@/utils/persistentStorage";
+import { clearAllLocalStorage } from "@/utils/persistentStorage";
 
 const Index = () => {
-  // Initialize data from localStorage to IndexedDB on first visit to homepage
+  // Clear old localStorage data on homepage load
   useEffect(() => {
-    const init = async () => {
-      console.log("Initializing data on homepage");
-      // Run initialization with a clean refresh to ensure syncing across browsers
-      await initializeFromLocalStorage();
-    };
-    init();
+    console.log("Clearing localStorage on homepage");
+    clearAllLocalStorage();
   }, []);
 
   return (

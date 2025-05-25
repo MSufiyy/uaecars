@@ -4,82 +4,78 @@ import { Button } from "@/components/ui/button";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const FeaturedListings = () => {
-  const [featuredCars, setFeaturedCars] = useState<CarListing[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use React Query for better caching and performance
+  const { data: featuredCars = [], isLoading: loading } = useQuery({
+    queryKey: ['featuredListings'],
+    queryFn: async (): Promise<CarListing[]> => {
+      console.log('Fetching featured listings...');
+      
+      // First fetch car listings
+      const { data: listings, error: listingsError } = await supabase
+        .from('car_listings')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(6);
 
-  useEffect(() => {
-    const loadCarListings = async () => {
-      try {
-        // First fetch car listings
-        const { data: listings, error: listingsError } = await supabase
-          .from('car_listings')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(6);
-
-        if (listingsError) {
-          console.error('Error fetching listings:', listingsError);
-          return;
-        }
-
-        if (listings && listings.length > 0) {
-          // Get unique user IDs
-          const userIds = [...new Set(listings.map(listing => listing.user_id))];
-          
-          // Fetch profiles for these users
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, name, phone')
-            .in('id', userIds);
-
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError);
-          }
-
-          // Create a map of profiles for quick lookup
-          const profilesMap = new Map();
-          if (profiles) {
-            profiles.forEach(profile => {
-              profilesMap.set(profile.id, profile);
-            });
-          }
-
-          // Transform listings with profile data
-          const transformedListings: CarListing[] = listings.map(listing => {
-            const profile = profilesMap.get(listing.user_id);
-            return {
-              id: listing.id,
-              title: listing.title,
-              price: listing.price,
-              year: listing.year,
-              mileage: listing.mileage,
-              location: listing.location,
-              imageUrl: listing.image_url || '',
-              description: listing.description,
-              make: listing.make,
-              model: listing.model,
-              seller: {
-                id: listing.user_id,
-                name: profile?.name || 'Unknown',
-                phone: profile?.phone
-              },
-              createdAt: listing.created_at
-            };
-          });
-          
-          setFeaturedCars(transformedListings);
-        }
-      } catch (error) {
-        console.error('Error loading listings:', error);
-      } finally {
-        setLoading(false);
+      if (listingsError) {
+        console.error('Error fetching listings:', listingsError);
+        throw listingsError;
       }
-    };
-    
-    loadCarListings();
-  }, []);
+
+      if (!listings || listings.length === 0) {
+        return [];
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(listings.map(listing => listing.user_id))];
+      
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name, phone')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Create a map of profiles for quick lookup
+      const profilesMap = new Map();
+      if (profiles) {
+        profiles.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+
+      // Transform listings with profile data
+      return listings.map(listing => {
+        const profile = profilesMap.get(listing.user_id);
+        return {
+          id: listing.id,
+          title: listing.title,
+          price: listing.price,
+          year: listing.year,
+          mileage: listing.mileage,
+          location: listing.location,
+          imageUrl: listing.image_url || '',
+          description: listing.description,
+          make: listing.make,
+          model: listing.model,
+          seller: {
+            id: listing.user_id,
+            name: profile?.name || 'Unknown',
+            phone: profile?.phone
+          },
+          createdAt: listing.created_at
+        };
+      });
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+  });
 
   return (
     <section className="py-12 bg-white">
