@@ -19,73 +19,58 @@ const Browse = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   
-  // Use React Query for better caching and performance
+  // Use React Query with optimized caching and single query with join
   const { data: cars = [], isLoading: loading } = useQuery({
     queryKey: ['allListings'],
     queryFn: async (): Promise<CarListing[]> => {
       console.log('Fetching all listings...');
       
-      // First fetch car listings
-      const { data: listings, error: listingsError } = await supabase
+      // Fetch car listings with profiles in a single query using join
+      const { data: listings, error } = await supabase
         .from('car_listings')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(
+            id,
+            name,
+            phone
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (listingsError) {
-        console.error('Error fetching listings:', listingsError);
-        throw listingsError;
+      if (error) {
+        console.error('Error fetching listings:', error);
+        throw error;
       }
 
       if (!listings || listings.length === 0) {
         return [];
       }
 
-      // Get unique user IDs
-      const userIds = [...new Set(listings.map(listing => listing.user_id))];
-      
-      // Fetch profiles for these users
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, name, phone')
-        .in('id', userIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-
-      // Create a map of profiles for quick lookup
-      const profilesMap = new Map();
-      if (profiles) {
-        profiles.forEach(profile => {
-          profilesMap.set(profile.id, profile);
-        });
-      }
-
       // Transform listings with profile data
-      return listings.map(listing => {
-        const profile = profilesMap.get(listing.user_id);
-        return {
-          id: listing.id,
-          title: listing.title,
-          price: listing.price,
-          year: listing.year,
-          mileage: listing.mileage,
-          location: listing.location,
-          imageUrl: listing.image_url || '',
-          description: listing.description,
-          make: listing.make,
-          model: listing.model,
-          seller: {
-            id: listing.user_id,
-            name: profile?.name || 'Unknown',
-            phone: profile?.phone
-          },
-          createdAt: listing.created_at
-        };
-      });
+      return listings.map(listing => ({
+        id: listing.id,
+        title: listing.title,
+        price: listing.price,
+        year: listing.year,
+        mileage: listing.mileage,
+        location: listing.location,
+        imageUrl: listing.image_url || '',
+        description: listing.description,
+        make: listing.make,
+        model: listing.model,
+        seller: {
+          id: listing.user_id,
+          name: listing.profiles?.name || 'Unknown',
+          phone: listing.profiles?.phone
+        },
+        createdAt: listing.created_at
+      }));
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: false, // Don't refetch when component mounts if data exists
   });
 
   useEffect(() => {
