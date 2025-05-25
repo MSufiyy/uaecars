@@ -2,28 +2,14 @@
 import { Button } from "@/components/ui/button";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
 import { Link } from "react-router-dom";
-import { useCarListingsAPI } from "@/hooks/useCarListingsAPI";
+import { useCarListings } from "@/hooks/useCarListings";
 
 const FeaturedListings = () => {
-  // Use the new API hook
-  const { data: allCars = [], isLoading: loading, error } = useCarListingsAPI();
+  // Use shared car listings hook - will get first 6 items from cache
+  const { data: allCars = [], isLoading: loading } = useCarListings();
   
   // Get first 6 cars for featured section
   const featuredCars = allCars.slice(0, 6);
-
-  if (error) {
-    return (
-      <section className="py-12 bg-white">
-        <div className="car-container">
-          <div className="text-center">
-            <h2 className="section-title">Featured Listings</h2>
-            <p className="text-muted-foreground mb-6">Unable to load listings. Please check your backend connection.</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="py-12 bg-white">
