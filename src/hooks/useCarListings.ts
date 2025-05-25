@@ -33,10 +33,10 @@ export const useCarListings = (limit?: number) => {
       // Get unique user IDs
       const userIds = [...new Set(listings.map(listing => listing.user_id))];
       
-      // Fetch profiles for all users
+      // Fetch profiles for all users including location
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, name, phone')
+        .select('id, name, phone, location')
         .in('id', userIds);
 
       if (profileError) {
@@ -68,7 +68,8 @@ export const useCarListings = (limit?: number) => {
           seller: {
             id: listing.user_id,
             name: profile?.name || 'Unknown',
-            phone: profile?.phone
+            phone: profile?.phone,
+            location: profile?.location
           },
           createdAt: listing.created_at
         };

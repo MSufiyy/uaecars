@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -60,7 +59,7 @@ const CarDetails = () => {
           // Fetch profile for the seller
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('id, name, phone')
+            .select('id, name, phone, location')
             .eq('id', listing.user_id)
             .single();
 
@@ -83,7 +82,8 @@ const CarDetails = () => {
             seller: {
               id: listing.user_id,
               name: profile?.name || 'Unknown',
-              phone: profile?.phone
+              phone: profile?.phone,
+              location: profile?.location
             },
             createdAt: listing.created_at
           };
@@ -238,7 +238,7 @@ const CarDetails = () => {
                 )}
                 <div className="flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-muted-foreground" />
-                  <span>{car.location}</span>
+                  <span>{car.seller.location || car.location}</span>
                 </div>
               </div>
             </Card>
