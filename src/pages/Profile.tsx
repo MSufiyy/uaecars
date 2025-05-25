@@ -12,6 +12,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import EditListingDialog from "@/components/cars/EditListingDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,8 @@ const Profile = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+  const [editingListing, setEditingListing] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -98,6 +101,17 @@ const Profile = () => {
       console.error("Error deleting listing:", error);
       toast.error("Failed to delete listing");
     }
+  };
+
+  const handleEditListing = (listing: any) => {
+    setEditingListing(listing);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh the listings after successful edit
+    queryClient.invalidateQueries({ queryKey: ["userListings", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["carListings"] });
   };
 
   if (profileLoading) {
@@ -307,7 +321,12 @@ const Profile = () => {
                         <Button variant="outline" className="flex-1" onClick={() => navigate(`/car/${listing.id}`)}>
                           View Listing
                         </Button>
-                        <Button variant="outline" size="icon" className="shrink-0">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="shrink-0"
+                          onClick={() => handleEditListing(listing)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
@@ -342,6 +361,13 @@ const Profile = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        <EditListingDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          listing={editingListing}
+          onSuccess={handleEditSuccess}
+        />
       </div>
     </MainLayout>
   );
