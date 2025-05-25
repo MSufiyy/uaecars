@@ -30,8 +30,11 @@ export const useCarListings = (limit?: number) => {
         return [];
       }
 
+      console.log('Listings found:', listings.length);
+
       // Get unique user IDs
       const userIds = [...new Set(listings.map(listing => listing.user_id))];
+      console.log('User IDs from listings:', userIds);
       
       // Fetch profiles for all users including location
       const { data: profiles, error: profileError } = await supabase
@@ -42,6 +45,8 @@ export const useCarListings = (limit?: number) => {
       if (profileError) {
         console.error('Error fetching profiles:', profileError);
       }
+
+      console.log('Profiles found:', profiles?.length || 0, profiles);
 
       // Create a map of profiles for quick lookup
       const profileMap = new Map();
@@ -54,6 +59,8 @@ export const useCarListings = (limit?: number) => {
       // Transform listings with profile data
       return listings.map(listing => {
         const profile = profileMap.get(listing.user_id);
+        console.log(`Listing ${listing.id}: user_id=${listing.user_id}, profile found:`, !!profile, profile);
+        
         return {
           id: listing.id,
           title: listing.title,
