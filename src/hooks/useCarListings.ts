@@ -67,9 +67,9 @@ export const useCarListings = (limit?: number) => {
           model: listing.model,
           seller: {
             id: listing.user_id,
-            name: profile?.name || 'Unknown',
-            phone: profile?.phone,
-            location: profile?.location
+            name: profile?.name || 'Seller',
+            phone: profile?.phone || 'Contact through platform',
+            location: profile?.location || listing.location
           },
           createdAt: listing.created_at
         };

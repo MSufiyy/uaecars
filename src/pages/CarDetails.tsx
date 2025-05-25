@@ -56,18 +56,18 @@ const CarDetails = () => {
             return;
           }
 
-          // Fetch profile for the seller
+          // Fetch profile for the seller - use maybeSingle to handle missing profiles
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('id, name, phone, location')
             .eq('id', listing.user_id)
-            .single();
+            .maybeSingle();
 
           if (profileError) {
             console.error('Error fetching profile:', profileError);
           }
 
-          // Transform listing with profile data
+          // Transform listing with profile data, providing fallbacks for missing data
           const carData: CarListing = {
             id: listing.id,
             title: listing.title,
@@ -81,9 +81,9 @@ const CarDetails = () => {
             model: listing.model,
             seller: {
               id: listing.user_id,
-              name: profile?.name || 'Unknown',
-              phone: profile?.phone,
-              location: profile?.location
+              name: profile?.name || 'Seller',
+              phone: profile?.phone || 'Contact through platform',
+              location: profile?.location || listing.location
             },
             createdAt: listing.created_at
           };
@@ -230,15 +230,13 @@ const CarDetails = () => {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <span>{car.seller.name}</span>
                 </div>
-                {car.seller.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground" />
-                    <span>{car.seller.phone}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
+                  <span>{car.seller.phone}</span>
+                </div>
                 <div className="flex items-center gap-3">
                   <MapPin className="h-5 w-5 text-muted-foreground" />
-                  <span>{car.seller.location || car.location}</span>
+                  <span>{car.seller.location}</span>
                 </div>
               </div>
             </Card>
