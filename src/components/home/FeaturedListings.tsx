@@ -2,81 +2,14 @@
 import { Button } from "@/components/ui/button";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useCarListings } from "@/hooks/useCarListings";
 
 const FeaturedListings = () => {
-  // Use React Query with optimized caching
-  const { data: featuredCars = [], isLoading: loading } = useQuery({
-    queryKey: ['featuredListings'],
-    queryFn: async (): Promise<CarListing[]> => {
-      console.log('Fetching featured listings...');
-      
-      // Fetch car listings first
-      const { data: listings, error } = await supabase
-        .from('car_listings')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(6);
-
-      if (error) {
-        console.error('Error fetching listings:', error);
-        throw error;
-      }
-
-      if (!listings || listings.length === 0) {
-        return [];
-      }
-
-      // Get unique user IDs
-      const userIds = [...new Set(listings.map(listing => listing.user_id))];
-      
-      // Fetch profiles for all users
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, name, phone')
-        .in('id', userIds);
-
-      if (profileError) {
-        console.error('Error fetching profiles:', profileError);
-      }
-
-      // Create a map of profiles for quick lookup
-      const profileMap = new Map();
-      if (profiles) {
-        profiles.forEach(profile => {
-          profileMap.set(profile.id, profile);
-        });
-      }
-
-      // Transform listings with profile data
-      return listings.map(listing => {
-        const profile = profileMap.get(listing.user_id);
-        return {
-          id: listing.id,
-          title: listing.title,
-          price: listing.price,
-          year: listing.year,
-          mileage: listing.mileage,
-          location: listing.location,
-          imageUrl: listing.image_url || '',
-          description: listing.description,
-          make: listing.make,
-          model: listing.model,
-          seller: {
-            id: listing.user_id,
-            name: profile?.name || 'Unknown',
-            phone: profile?.phone
-          },
-          createdAt: listing.created_at
-        };
-      });
-    },
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnMount: false, // Don't refetch when component mounts if data exists
-  });
+  // Use shared car listings hook - will get first 6 items from cache
+  const { data: allCars = [], isLoading: loading } = useCarListings();
+  
+  // Get first 6 cars for featured section
+  const featuredCars = allCars.slice(0, 6);
 
   return (
     <section className="py-12 bg-white">
