@@ -198,27 +198,6 @@ const CarDetails = () => {
               <h2 className="text-xl font-semibold mb-4">Description</h2>
               <p className="text-muted-foreground whitespace-pre-line">{car.description}</p>
             </Card>
-
-            {/* Seller Info Card for all logged-in users */}
-            {user && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Seller Information</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <User className="h-5 w-5 text-muted-foreground" />
-                    <span>{car.seller.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground" />
-                    <span>{car.seller.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <span>{car.seller.location}</span>
-                  </div>
-                </div>
-              </Card>
-            )}
           </div>
 
           {/* Seller Info & Actions Column */}
@@ -239,6 +218,27 @@ const CarDetails = () => {
                 </p>
               )}
             </Card>
+
+            {/* Seller Info Card - Show for all logged-in users */}
+            {user && (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Seller Information</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <span>{car.seller.location}</span>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Message for non-logged-in users */}
             {!user && (
