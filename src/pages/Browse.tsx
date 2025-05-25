@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
@@ -162,8 +163,8 @@ const Browse = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Any Location</SelectItem>
-                        {locations.map(location => (
-                          <SelectItem key={location} value={location}>
+                        {locations.map((location, index) => (
+                          <SelectItem key={index} value={location}>
                             {location}
                           </SelectItem>
                         ))}
