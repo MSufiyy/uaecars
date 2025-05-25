@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -50,6 +49,7 @@ type FormValues = {
 
 const Sell = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -88,6 +88,12 @@ const Sell = () => {
       toast.error("Please upload an image of your car");
       return;
     }
+
+    if (isSubmitting) {
+      return; // Prevent duplicate submissions
+    }
+    
+    setIsSubmitting(true);
     
     try {
       // Create new listing in Supabase
@@ -123,6 +129,8 @@ const Sell = () => {
     } catch (error) {
       console.error("Error saving listing:", error);
       toast.error("Failed to list your car. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -354,8 +362,8 @@ const Sell = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full">
-                  List Car For Sale
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? "Listing Your Car..." : "List Car For Sale"}
                 </Button>
               </form>
             </Form>

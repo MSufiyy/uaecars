@@ -30,8 +30,8 @@ const HeroBanner = () => {
           </div>
           <div className="animate-fade-in hidden md:block">
             <img 
-              src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&q=80&w=1000" 
-              alt="Luxury car" 
+              src="/lovable-uploads/5b6d3abe-76c2-47b2-bb91-51a3cfd410f7.png" 
+              alt="Car dealership lot" 
               className="rounded-lg object-cover w-full h-[400px] shadow-lg"
             />
           </div>

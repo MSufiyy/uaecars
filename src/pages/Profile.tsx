@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -7,11 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Phone, MapPin } from "lucide-react";
+import { User, Phone, MapPin, Edit, Trash2 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Profile = () => {
   const { user } = useAuth();
@@ -21,6 +32,7 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Fetch user's car listings
   const { data: userListings = [], isLoading: listingsLoading } = useQuery({
@@ -60,6 +72,31 @@ const Profile = () => {
     
     if (success) {
       setEditMode(false);
+    }
+  };
+
+  const handleDeleteListing = async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("car_listings")
+        .delete()
+        .eq("id", listingId)
+        .eq("user_id", user?.id); // Extra security check
+
+      if (error) {
+        console.error("Error deleting listing:", error);
+        toast.error("Failed to delete listing");
+        return;
+      }
+
+      toast.success("Listing deleted successfully");
+      // Refresh the listings
+      queryClient.invalidateQueries({ queryKey: ["userListings", user?.id] });
+      // Also refresh the car listings cache
+      queryClient.invalidateQueries({ queryKey: ["carListings"] });
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      toast.error("Failed to delete listing");
     }
   };
 
@@ -266,10 +303,37 @@ const Profile = () => {
                           Listed on {new Date(listing.created_at).toLocaleDateString()}
                         </div>
                       </CardContent>
-                      <CardFooter className="p-4 pt-0">
-                        <Button variant="outline" className="w-full" onClick={() => navigate(`/car/${listing.id}`)}>
+                      <CardFooter className="p-4 pt-0 flex gap-2">
+                        <Button variant="outline" className="flex-1" onClick={() => navigate(`/car/${listing.id}`)}>
                           View Listing
                         </Button>
+                        <Button variant="outline" size="icon" className="shrink-0">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0 text-red-600 hover:text-red-700">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Listing</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this listing? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteListing(listing.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardFooter>
                     </Card>
                   ))}
