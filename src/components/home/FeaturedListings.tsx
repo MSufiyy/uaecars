@@ -12,17 +12,10 @@ const FeaturedListings = () => {
     queryFn: async (): Promise<CarListing[]> => {
       console.log('Fetching featured listings...');
       
-      // Fetch car listings with profiles in a single query using join
+      // Fetch car listings first
       const { data: listings, error } = await supabase
         .from('car_listings')
-        .select(`
-          *,
-          profiles!inner(
-            id,
-            name,
-            phone
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(6);
 
@@ -35,25 +28,49 @@ const FeaturedListings = () => {
         return [];
       }
 
+      // Get unique user IDs
+      const userIds = [...new Set(listings.map(listing => listing.user_id))];
+      
+      // Fetch profiles for all users
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, name, phone')
+        .in('id', userIds);
+
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+      }
+
+      // Create a map of profiles for quick lookup
+      const profileMap = new Map();
+      if (profiles) {
+        profiles.forEach(profile => {
+          profileMap.set(profile.id, profile);
+        });
+      }
+
       // Transform listings with profile data
-      return listings.map(listing => ({
-        id: listing.id,
-        title: listing.title,
-        price: listing.price,
-        year: listing.year,
-        mileage: listing.mileage,
-        location: listing.location,
-        imageUrl: listing.image_url || '',
-        description: listing.description,
-        make: listing.make,
-        model: listing.model,
-        seller: {
-          id: listing.user_id,
-          name: listing.profiles?.name || 'Unknown',
-          phone: listing.profiles?.phone
-        },
-        createdAt: listing.created_at
-      }));
+      return listings.map(listing => {
+        const profile = profileMap.get(listing.user_id);
+        return {
+          id: listing.id,
+          title: listing.title,
+          price: listing.price,
+          year: listing.year,
+          mileage: listing.mileage,
+          location: listing.location,
+          imageUrl: listing.image_url || '',
+          description: listing.description,
+          make: listing.make,
+          model: listing.model,
+          seller: {
+            id: listing.user_id,
+            name: profile?.name || 'Unknown',
+            phone: profile?.phone
+          },
+          createdAt: listing.created_at
+        };
+      });
     },
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
