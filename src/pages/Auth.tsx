@@ -1,53 +1,33 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { login, register } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Sign in failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have been signed in successfully.",
-        });
+      const success = await login(email, password);
+      if (success) {
         navigate("/");
       }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign in failed",
-        description: "An unexpected error occurred.",
-      });
     } finally {
       setLoading(false);
     }
@@ -58,36 +38,17 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const success = await register({
+        name,
         email,
         password,
-        options: {
-          data: {
-            name: name,
-            phone: phone,
-          },
-        },
+        phone: phone || undefined,
+        location: location || undefined,
       });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Sign up failed",
-          description: error.message,
-        });
-      } else {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
-        });
-        // Don't navigate immediately - wait for email verification
+      
+      if (success) {
+        navigate("/");
       }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign up failed",
-        description: "An unexpected error occurred.",
-      });
     } finally {
       setLoading(false);
     }
@@ -170,6 +131,15 @@ const Auth = () => {
                       placeholder="+971 50 123 4567"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-location">Location</Label>
+                    <Input 
+                      id="signup-location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Dubai, UAE"
                     />
                   </div>
                   <div className="space-y-2">

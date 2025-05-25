@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
@@ -9,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useCarListings } from "@/hooks/useCarListings";
+import { useCarListingsAPI } from "@/hooks/useCarListingsAPI";
 
 const Browse = () => {
   const [filteredCars, setFilteredCars] = useState<CarListing[]>([]);
@@ -18,8 +17,8 @@ const Browse = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   
-  // Use shared car listings hook - will use cached data if available
-  const { data: cars = [], isLoading: loading } = useCarListings();
+  // Use the new API hook
+  const { data: cars = [], isLoading: loading, error } = useCarListingsAPI();
 
   useEffect(() => {
     // Apply filters and sorting when any filter state changes
@@ -73,6 +72,20 @@ const Browse = () => {
   // Get unique locations for the filter dropdown
   const locations = cars.length > 0 ? 
     [...new Set(cars.map(car => car.location))] : [];
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="car-container py-12">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold mb-2">Error loading cars</h3>
+            <p className="text-muted-foreground mb-6">Please make sure your backend server is running</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
