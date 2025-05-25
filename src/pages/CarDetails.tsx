@@ -11,6 +11,7 @@ import { Phone, MapPin, User, Car, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/utils/persistentStorage";
+import { useCarListings } from "@/hooks/useCarListings";
 
 const CarDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,14 +20,28 @@ const CarDetails = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
+  // Use cached car listings data
+  const { data: cachedCars = [] } = useCarListings();
+
   useEffect(() => {
     const fetchData = async () => {
       // Check if user is logged in
       const currentUser = await getCurrentUser();
       setIsLoggedIn(!!currentUser);
       
-      // Get car listing from Supabase
       if (id) {
+        // First try to find the car in cached data
+        const cachedCar = cachedCars.find(car => car.id === id);
+        
+        if (cachedCar) {
+          console.log('Using cached car data');
+          setCar(cachedCar);
+          setLoading(false);
+          return;
+        }
+
+        // If not found in cache, fetch from Supabase
+        console.log('Fetching car details from Supabase');
         try {
           // First fetch car listing
           const { data: listing, error: listingError } = await supabase
@@ -83,7 +98,7 @@ const CarDetails = () => {
     };
     
     fetchData();
-  }, [id]);
+  }, [id, cachedCars]);
 
   const handleContactSeller = () => {
     if (!isLoggedIn) {
@@ -126,7 +141,6 @@ const CarDetails = () => {
     maximumFractionDigits: 0,
   }).format(car.price);
 
-  // Format mileage with commas
   const formattedMileage = new Intl.NumberFormat('en').format(car.mileage);
 
   return (
