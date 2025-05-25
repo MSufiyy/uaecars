@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import CarCard, { CarListing } from "@/components/cars/CarCard";
@@ -19,7 +18,7 @@ const Browse = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   
-  // Use React Query with optimized caching
+  // Use React Query with optimized caching - same settings as FeaturedListings
   const { data: cars = [], isLoading: loading } = useQuery({
     queryKey: ['allListings'],
     queryFn: async (): Promise<CarListing[]> => {
