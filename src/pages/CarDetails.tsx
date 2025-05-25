@@ -10,25 +10,21 @@ import { CarListing } from "@/components/cars/CarCard";
 import { Phone, MapPin, User, Car, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentUser } from "@/utils/persistentStorage";
 import { useCarListings } from "@/hooks/useCarListings";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const CarDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [car, setCar] = useState<CarListing | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Use cached car listings data
   const { data: cachedCars = [] } = useCarListings();
 
   useEffect(() => {
     const fetchData = async () => {
-      // Check if user is logged in
-      const currentUser = await getCurrentUser();
-      setIsLoggedIn(!!currentUser);
-      
       if (id) {
         // First try to find the car in cached data
         const cachedCar = cachedCars.find(car => car.id === id);
@@ -102,7 +98,7 @@ const CarDetails = () => {
   }, [id, cachedCars]);
 
   const handleContactSeller = () => {
-    if (!isLoggedIn) {
+    if (!user) {
       toast.error("Please log in to contact the seller");
       navigate("/auth");
       return;
@@ -202,31 +198,11 @@ const CarDetails = () => {
               <h2 className="text-xl font-semibold mb-4">Description</h2>
               <p className="text-muted-foreground whitespace-pre-line">{car.description}</p>
             </Card>
-          </div>
 
-          {/* Seller Info & Actions Column */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Price Card */}
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-car-primary" />
-                <h2 className="text-2xl font-bold">{formattedPrice}</h2>
-              </div>
-              <p className="text-muted-foreground text-sm mb-6">Asking price</p>
-              <Button className="w-full mb-3" onClick={handleContactSeller}>
-                Contact Seller
-              </Button>
-              {!isLoggedIn && (
-                <p className="text-center text-sm text-muted-foreground">
-                  You need to <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/auth")}>login</Button> to contact the seller
-                </p>
-              )}
-            </Card>
-
-            {/* Seller Info Card - Always show when user is logged in */}
-            {isLoggedIn && (
+            {/* Seller Info Card for all logged-in users */}
+            {user && (
               <Card className="p-6">
-                <h3 className="font-medium mb-4">Seller Information</h3>
+                <h2 className="text-xl font-semibold mb-4">Seller Information</h2>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <User className="h-5 w-5 text-muted-foreground" />
@@ -243,9 +219,29 @@ const CarDetails = () => {
                 </div>
               </Card>
             )}
+          </div>
+
+          {/* Seller Info & Actions Column */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Price Card */}
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-5 w-5 text-car-primary" />
+                <h2 className="text-2xl font-bold">{formattedPrice}</h2>
+              </div>
+              <p className="text-muted-foreground text-sm mb-6">Asking price</p>
+              <Button className="w-full mb-3" onClick={handleContactSeller}>
+                Contact Seller
+              </Button>
+              {!user && (
+                <p className="text-center text-sm text-muted-foreground">
+                  You need to <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/auth")}>login</Button> to contact the seller
+                </p>
+              )}
+            </Card>
 
             {/* Message for non-logged-in users */}
-            {!isLoggedIn && (
+            {!user && (
               <Card className="p-6">
                 <h3 className="font-medium mb-4">Seller Information</h3>
                 <p className="text-muted-foreground text-sm">
