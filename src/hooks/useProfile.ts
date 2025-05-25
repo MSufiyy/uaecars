@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Profile {
   id: string;
@@ -16,57 +16,54 @@ interface Profile {
 
 export const useProfile = () => {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    } else {
-      setProfile(null);
-      setLoading(false);
-    }
-  }, [user]);
+  const { data: profile, isLoading: loading, refetch } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async (): Promise<Profile | null> => {
+      if (!user) return null;
 
-  const fetchProfile = async () => {
-    if (!user) return;
+      try {
+        // Try to fetch existing profile
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
 
-    try {
-      // Try to fetch existing profile
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+        if (error) {
+          console.error("Error fetching profile:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load profile",
+          });
+          return null;
+        }
 
-      if (error) {
+        if (data) {
+          // Profile exists
+          return data;
+        } else {
+          // No profile exists, create one
+          console.log("No profile found for user, creating one...");
+          return await createProfile();
+        }
+      } catch (error) {
         console.error("Error fetching profile:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load profile",
-        });
-        return;
+        return null;
       }
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
 
-      if (data) {
-        // Profile exists
-        setProfile(data);
-      } else {
-        // No profile exists, create one
-        console.log("No profile found for user, creating one...");
-        await createProfile();
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createProfile = async () => {
-    if (!user) return;
+  const createProfile = async (): Promise<Profile | null> => {
+    if (!user) return null;
 
     try {
       const newProfile = {
@@ -90,16 +87,18 @@ export const useProfile = () => {
           title: "Error",
           description: "Failed to create profile",
         });
+        return null;
       } else {
         console.log("Profile created successfully:", data);
-        setProfile(data);
         toast({
           title: "Welcome!",
           description: "Your profile has been created successfully",
         });
+        return data;
       }
     } catch (error) {
       console.error("Error creating profile:", error);
+      return null;
     }
   };
 
@@ -123,7 +122,9 @@ export const useProfile = () => {
         });
         return false;
       } else {
-        setProfile({ ...profile, ...updates });
+        // Update the cached profile data
+        queryClient.setQueryData(['profile', user.id], { ...profile, ...updates });
+        
         toast({
           title: "Success",
           description: "Profile updated successfully",
@@ -140,6 +141,6 @@ export const useProfile = () => {
     profile,
     loading,
     updateProfile,
-    refetch: fetchProfile,
+    refetch,
   };
 };
