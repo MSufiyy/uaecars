@@ -31,24 +31,3 @@ export const setCurrentUser = (user: {
     console.log("Current user cleared");
   }
 };
-
-// Clear all localStorage data
-export const clearAllLocalStorage = (): void => {
-  localStorage.removeItem("users");
-  localStorage.removeItem("carListings");
-  localStorage.removeItem("currentUser");
-  console.log("All localStorage data cleared");
-};
-
-// Initialize by clearing old data
-export const initializeFromLocalStorage = async () => {
-  try {
-    console.log("Clearing old localStorage data");
-    // Clear old localStorage data
-    localStorage.removeItem("users");
-    localStorage.removeItem("carListings");
-    console.log("Old localStorage data cleared");
-  } catch (error) {
-    console.error("Error clearing localStorage:", error);
-  }
-};

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { CarListing } from "@/components/cars/CarCard";
 import { Phone, MapPin, User, Car, DollarSign } from "lucide-react";
 import { toast } from "sonner";
-import { getListing, getCurrentUser } from "@/utils/persistentStorage";
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/utils/persistentStorage";
 
 const CarDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,11 +25,58 @@ const CarDetails = () => {
       const currentUser = await getCurrentUser();
       setIsLoggedIn(!!currentUser);
       
-      // Get car listing
+      // Get car listing from Supabase
       if (id) {
-        const carData = await getListing(id);
-        if (carData) {
+        try {
+          // First fetch car listing
+          const { data: listing, error: listingError } = await supabase
+            .from('car_listings')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (listingError || !listing) {
+            console.error('Error fetching listing:', listingError);
+            setCar(null);
+            setLoading(false);
+            return;
+          }
+
+          // Fetch profile for the seller
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, name, phone')
+            .eq('id', listing.user_id)
+            .single();
+
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+          }
+
+          // Transform listing with profile data
+          const carData: CarListing = {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            year: listing.year,
+            mileage: listing.mileage,
+            location: listing.location,
+            imageUrl: listing.image_url || '',
+            description: listing.description,
+            make: listing.make,
+            model: listing.model,
+            seller: {
+              id: listing.user_id,
+              name: profile?.name || 'Unknown',
+              phone: profile?.phone
+            },
+            createdAt: listing.created_at
+          };
+
           setCar(carData);
+        } catch (error) {
+          console.error('Error fetching car details:', error);
+          setCar(null);
         }
       }
       setLoading(false);
@@ -40,7 +88,7 @@ const CarDetails = () => {
   const handleContactSeller = () => {
     if (!isLoggedIn) {
       toast.error("Please log in to contact the seller");
-      navigate("/login");
+      navigate("/auth");
       return;
     }
     
@@ -155,7 +203,7 @@ const CarDetails = () => {
               </Button>
               {!isLoggedIn && (
                 <p className="text-center text-sm text-muted-foreground">
-                  You need to <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/login")}>login</Button> to contact the seller
+                  You need to <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/auth")}>login</Button> to contact the seller
                 </p>
               )}
             </Card>
